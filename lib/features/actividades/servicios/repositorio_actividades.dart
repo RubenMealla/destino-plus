@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/config/configuracion_supabase.dart';
 import '../modelos/actividad_viaje.dart';
+import '../validacion/validadores_actividad.dart';
 
 class ExcepcionActividades implements Exception {
   const ExcepcionActividades(this.mensaje);
@@ -184,23 +185,12 @@ class RepositorioActividades implements FuenteActividades {
     String? lugar,
     String? notas,
   }) {
-    if (titulo.trim().length < 2 || titulo.trim().length > 120) {
-      throw const ExcepcionActividades(
-        'El título debe tener entre 2 y 120 caracteres.',
-      );
-    }
-
-    if ((lugar?.trim().length ?? 0) > 160) {
-      throw const ExcepcionActividades(
-        'El lugar no puede superar los 160 caracteres.',
-      );
-    }
-
-    if ((notas?.trim().length ?? 0) > 1000) {
-      throw const ExcepcionActividades(
-        'Las notas no pueden superar los 1000 caracteres.',
-      );
-    }
+    final errores = <String?>[
+      ValidadoresActividad.titulo(titulo),
+      ValidadoresActividad.hora(horaInicio),
+      ValidadoresActividad.lugar(lugar),
+      ValidadoresActividad.notas(notas),
+    ];
 
     if (fecha.year < 2000 || fecha.year > 2100) {
       throw const ExcepcionActividades(
@@ -208,13 +198,10 @@ class RepositorioActividades implements FuenteActividades {
       );
     }
 
-    final hora = horaInicio?.trim();
-    if (hora != null &&
-        hora.isNotEmpty &&
-        !RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(hora)) {
-      throw const ExcepcionActividades(
-        'La hora debe usar el formato HH:mm.',
-      );
+    for (final error in errores) {
+      if (error != null) {
+        throw ExcepcionActividades(error);
+      }
     }
   }
 
@@ -231,13 +218,19 @@ class RepositorioActividades implements FuenteActividades {
   String _traducirError(PostgrestException error) {
     final mensaje = error.message.toLowerCase();
 
+    if (mensaje.contains('actividad_fecha_fuera_viaje')) {
+      return 'La fecha de la actividad debe estar dentro de las fechas '
+          'del viaje.';
+    }
+
     if (mensaje.contains('row-level security') ||
         mensaje.contains('violates row-level security')) {
       return 'No tienes permiso para modificar actividades de este viaje.';
     }
 
     if (mensaje.contains('foreign key') ||
-        mensaje.contains('viaje_id')) {
+        mensaje.contains('viaje_id') ||
+        mensaje.contains('viaje_no_disponible')) {
       return 'El viaje asociado no existe o ya no está disponible.';
     }
 

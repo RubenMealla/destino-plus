@@ -5,8 +5,6 @@ existente.
 
 ## Relación
 
-La estructura principal es:
-
 ```text
 auth.users
     |
@@ -15,10 +13,9 @@ auth.users
           +-- actividades_viaje
 ```
 
-Una actividad no puede existir sin un viaje.
-
-La clave foránea utiliza `on delete cascade`, por lo que al eliminar un viaje
-también se eliminan sus actividades.
+Una actividad no puede existir sin un viaje. La clave foránea utiliza
+`on delete cascade`, por lo que al eliminar un viaje también se eliminan sus
+actividades.
 
 ## Tabla `actividades_viaje`
 
@@ -39,45 +36,48 @@ también se eliminan sus actividades.
 
 Las políticas no confían en un `usuario_id` enviado por Flutter.
 
-Para cada operación se comprueba que:
+Para cada operación se comprueba que la actividad pertenece a un viaje cuyo
+`usuario_id` coincide con `auth.uid()`.
 
-1. la actividad pertenece a un viaje existente;
-2. el `usuario_id` de ese viaje coincide con `auth.uid()`.
+Así, un usuario no puede consultar ni modificar actividades pertenecientes a
+los viajes de otra cuenta.
 
-Así, un usuario no puede consultar ni modificar actividades pertenecientes
-a los viajes de otra cuenta.
+## Validación del rango del viaje
 
-## Migración
+Destino+ valida la fecha de una actividad en dos niveles.
 
-Ejecutar después de la migración de `viajes`:
+La interfaz avisa inmediatamente cuando la fecha queda antes del inicio o
+después del final del viaje.
+
+La base de datos también utiliza el trigger:
 
 ```text
-supabase/migrations/202608310002_crear_tabla_actividades_viaje.sql
+actividades_validar_fecha_en_viaje
 ```
 
-Puede copiarse el contenido en el SQL Editor de Supabase.
+Por lo tanto, incluso una petición que no pase por el formulario Flutter no
+puede guardar una actividad fuera del intervalo del viaje.
 
-## Orden del itinerario
+La migración correspondiente es:
 
-El repositorio devuelve las actividades ordenadas por:
+```text
+supabase/migrations/202608310003_validar_fechas_actividades.sql
+```
 
-1. fecha;
-2. hora de inicio;
-3. fecha de creación.
+## Orden e itinerario
 
-Las actividades sin hora se mantienen permitidas porque no todas las tareas
-de un viaje requieren un horario exacto.
+El repositorio devuelve las actividades ordenadas por fecha y hora. La
+interfaz las agrupa por día para formar un itinerario legible.
 
-## Validaciones iniciales
+Las actividades pueden marcarse como completadas sin ser eliminadas. Ese
+estado queda persistido en Supabase.
 
-La capa de persistencia verifica:
+## Migraciones relacionadas
 
-- título entre 2 y 120 caracteres;
-- lugar opcional de máximo 160;
-- notas opcionales de máximo 1000;
-- hora opcional en formato `HH:mm`;
-- fecha dentro de un rango técnico válido.
+Ejecutar en este orden:
 
-La validación para comprobar que la fecha de una actividad pertenezca al
-intervalo concreto del viaje se incorporará junto con la interfaz del
-itinerario.
+```text
+202608310001_crear_tabla_viajes.sql
+202608310002_crear_tabla_actividades_viaje.sql
+202608310003_validar_fechas_actividades.sql
+```

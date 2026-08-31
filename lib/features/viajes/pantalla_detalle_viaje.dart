@@ -12,7 +12,7 @@ import '../actividades/servicios/repositorio_actividades.dart';
 import 'modelos/viaje.dart';
 import 'servicios/repositorio_viajes.dart';
 
-/// Muestra la información completa de un viaje y sus actividades.
+/// Muestra la información completa de un viaje y su itinerario.
 class PantallaDetalleViaje extends StatefulWidget {
   const PantallaDetalleViaje({
     super.key,
@@ -79,9 +79,10 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
     }
   }
 
-  Future<void> _crearActividad() async {
+  Future<void> _crearActividad(Viaje viaje) async {
     final creada = await context.push<bool>(
       RutasApp.nuevaActividadDeViaje(widget.viajeId),
+      extra: viaje,
     );
 
     if (creada == true && mounted) {
@@ -97,12 +98,16 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
     }
   }
 
-  Future<void> _editarActividad(ActividadViaje actividad) async {
+  Future<void> _editarActividad(
+    Viaje viaje,
+    ActividadViaje actividad,
+  ) async {
     final actualizada = await context.push<bool>(
       RutasApp.edicionActividadDeViaje(
         widget.viajeId,
         actividad.id,
       ),
+      extra: viaje,
     );
 
     if (actualizada == true && mounted) {
@@ -116,6 +121,30 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
         const SnackBar(
           content: Text('Actividad actualizada correctamente.'),
         ),
+      );
+    }
+  }
+
+  Future<void> _cambiarCompletada(ActividadViaje actividad) async {
+    try {
+      await _repositorioActividades.actualizar(
+        actividad.copyWith(
+          completada: !actividad.completada,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await _recargarActividades();
+    } on ExcepcionActividades catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.mensaje)),
       );
     }
   }
@@ -346,9 +375,12 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
                   ),
                   const SizedBox(height: DimensionesApp.espacio24),
                   _SeccionActividades(
+                    viaje: viaje,
                     carga: _cargaActividades,
-                    onCrear: _crearActividad,
-                    onEditar: _editarActividad,
+                    onCrear: () => _crearActividad(viaje),
+                    onEditar: (actividad) =>
+                        _editarActividad(viaje, actividad),
+                    onCambiarCompletada: _cambiarCompletada,
                     onEliminar: _eliminarActividad,
                     onReintentar: _recargarActividades,
                   ),
@@ -410,16 +442,20 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
 
 class _SeccionActividades extends StatelessWidget {
   const _SeccionActividades({
+    required this.viaje,
     required this.carga,
     required this.onCrear,
     required this.onEditar,
+    required this.onCambiarCompletada,
     required this.onEliminar,
     required this.onReintentar,
   });
 
+  final Viaje viaje;
   final Future<List<ActividadViaje>> carga;
   final VoidCallback onCrear;
   final ValueChanged<ActividadViaje> onEditar;
+  final ValueChanged<ActividadViaje> onCambiarCompletada;
   final ValueChanged<ActividadViaje> onEliminar;
   final Future<void> Function() onReintentar;
 
@@ -448,7 +484,8 @@ class _SeccionActividades extends StatelessWidget {
             ),
             const SizedBox(height: DimensionesApp.espacio4),
             Text(
-              'Actividades planificadas para este viaje.',
+              'Del ${_formatearFecha(viaje.fechaInicio)} al '
+              '${_formatearFecha(viaje.fechaFin)}.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: DimensionesApp.espacio16),
@@ -480,111 +517,58 @@ class _SeccionActividades extends StatelessWidget {
                 ),
               )
             else
-              ...snapshot.data!.map(
-                (actividad) => Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: DimensionesApp.espacio12,
-                  ),
-                  child: _TarjetaActividad(
-                    actividad: actividad,
-                    onEditar: () => onEditar(actividad),
-                    onEliminar: () => onEliminar(actividad),
-                  ),
-                ),
-              ),
+              ..._construirDias(context, snapshot.data!),
           ],
         );
       },
     );
   }
-}
 
-class _TarjetaActividad extends StatelessWidget {
-  const _TarjetaActividad({
-    required this.actividad,
-    required this.onEditar,
-    required this.onEliminar,
-  });
+  List<Widget> _construirDias(
+    BuildContext context,
+    List<ActividadViaje> actividades,
+  ) {
+    final grupos = <DateTime, List<ActividadViaje>>{};
 
-  final ActividadViaje actividad;
-  final VoidCallback onEditar;
-  final VoidCallback onEliminar;
+    for (final actividad in actividades) {
+      final dia = DateTime(
+        actividad.fecha.year,
+        actividad.fecha.month,
+        actividad.fecha.day,
+      );
 
-  @override
-  Widget build(BuildContext context) {
-    final fecha = _formatearFecha(actividad.fecha);
-    final hora = actividad.horaInicio;
+      grupos.putIfAbsent(dia, () => []).add(actividad);
+    }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(DimensionesApp.espacio16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.event_available_outlined),
-                const SizedBox(width: DimensionesApp.espacio12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        actividad.titulo,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: DimensionesApp.espacio4),
-                      Text(
-                        hora == null ? fecha : '$fecha · $hora',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: 'Opciones de actividad',
-                  onSelected: (valor) {
-                    if (valor == 'editar') {
-                      onEditar();
-                    } else if (valor == 'eliminar') {
-                      onEliminar();
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: 'editar',
-                      child: Text('Editar'),
-                    ),
-                    PopupMenuItem(
-                      value: 'eliminar',
-                      child: Text('Eliminar'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            if (actividad.lugar?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: DimensionesApp.espacio8),
-              Row(
-                children: [
-                  const Icon(Icons.place_outlined, size: 18),
-                  const SizedBox(width: DimensionesApp.espacio8),
-                  Expanded(child: Text(actividad.lugar!.trim())),
-                ],
-              ),
-            ],
-            if (actividad.notas?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: DimensionesApp.espacio8),
-              Text(
-                actividad.notas!.trim(),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ],
+    final dias = grupos.keys.toList()..sort();
+
+    return [
+      for (final dia in dias) ...[
+        Padding(
+          padding: const EdgeInsets.only(
+            top: DimensionesApp.espacio8,
+            bottom: DimensionesApp.espacio8,
+          ),
+          child: Text(
+            _fechaLarga(dia),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
-      ),
-    );
+        for (final actividad in grupos[dia]!)
+          Padding(
+            padding: const EdgeInsets.only(
+              bottom: DimensionesApp.espacio12,
+            ),
+            child: _TarjetaActividad(
+              actividad: actividad,
+              onEditar: () => onEditar(actividad),
+              onCambiarCompletada: () =>
+                  onCambiarCompletada(actividad),
+              onEliminar: () => onEliminar(actividad),
+            ),
+          ),
+      ],
+    ];
   }
 
   static String _formatearFecha(DateTime fecha) {
@@ -592,6 +576,125 @@ class _TarjetaActividad extends StatelessWidget {
     final mes = fecha.month.toString().padLeft(2, '0');
 
     return '$dia/$mes/${fecha.year}';
+  }
+
+  static String _fechaLarga(DateTime fecha) {
+    const meses = [
+      'enero',
+      'febrero',
+      'marzo',
+      'abril',
+      'mayo',
+      'junio',
+      'julio',
+      'agosto',
+      'septiembre',
+      'octubre',
+      'noviembre',
+      'diciembre',
+    ];
+
+    return '${fecha.day} de ${meses[fecha.month - 1]} de ${fecha.year}';
+  }
+}
+
+class _TarjetaActividad extends StatelessWidget {
+  const _TarjetaActividad({
+    required this.actividad,
+    required this.onEditar,
+    required this.onCambiarCompletada,
+    required this.onEliminar,
+  });
+
+  final ActividadViaje actividad;
+  final VoidCallback onEditar;
+  final VoidCallback onCambiarCompletada;
+  final VoidCallback onEliminar;
+
+  @override
+  Widget build(BuildContext context) {
+    final hora = actividad.horaInicio;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(DimensionesApp.espacio12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: actividad.completada,
+              tooltip: actividad.completada
+                  ? 'Marcar como pendiente'
+                  : 'Marcar como completada',
+              onChanged: (_) => onCambiarCompletada(),
+            ),
+            const SizedBox(width: DimensionesApp.espacio4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    actividad.titulo,
+                    style: textTheme.titleMedium?.copyWith(
+                      decoration: actividad.completada
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+                  if (hora != null) ...[
+                    const SizedBox(height: DimensionesApp.espacio4),
+                    Text(
+                      hora,
+                      style: textTheme.bodySmall,
+                    ),
+                  ],
+                  if (actividad.lugar?.trim().isNotEmpty == true) ...[
+                    const SizedBox(height: DimensionesApp.espacio8),
+                    Row(
+                      children: [
+                        const Icon(Icons.place_outlined, size: 18),
+                        const SizedBox(width: DimensionesApp.espacio8),
+                        Expanded(
+                          child: Text(actividad.lugar!.trim()),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (actividad.notas?.trim().isNotEmpty == true) ...[
+                    const SizedBox(height: DimensionesApp.espacio8),
+                    Text(
+                      actividad.notas!.trim(),
+                      style: textTheme.bodyMedium,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'Opciones de actividad',
+              onSelected: (valor) {
+                if (valor == 'editar') {
+                  onEditar();
+                } else if (valor == 'eliminar') {
+                  onEliminar();
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'editar',
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem(
+                  value: 'eliminar',
+                  child: Text('Eliminar'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

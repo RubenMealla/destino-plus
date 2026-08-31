@@ -9,6 +9,7 @@ import '../../features/explorar/pantalla_explorar.dart';
 import '../../features/inicio/pantalla_inicio.dart';
 import '../../features/perfil/pantalla_perfil.dart';
 import '../../features/presentacion/pantalla_presentacion.dart';
+import '../../features/viajes/modelos/viaje.dart';
 import '../../features/viajes/pantalla_detalle_viaje.dart';
 import '../../features/viajes/pantalla_formulario_viaje.dart';
 import '../../features/viajes/pantalla_viajes.dart';
@@ -118,9 +119,13 @@ abstract final class RouterApp {
                           builder: (context, state) {
                             final viajeId =
                                 state.pathParameters['id'] ?? '';
+                            final extra = state.extra;
+                            final viaje =
+                                extra is Viaje ? extra : null;
 
                             return PantallaFormularioActividad(
                               viajeId: viajeId,
+                              viaje: viaje,
                             );
                           },
                         ),
@@ -131,9 +136,13 @@ abstract final class RouterApp {
                                 state.pathParameters['id'] ?? '';
                             final actividadId =
                                 state.pathParameters['actividadId'] ?? '';
+                            final extra = state.extra;
+                            final viaje =
+                                extra is Viaje ? extra : null;
 
                             return PantallaFormularioActividad(
                               viajeId: viajeId,
+                              viaje: viaje,
                               actividadId: actividadId,
                             );
                           },

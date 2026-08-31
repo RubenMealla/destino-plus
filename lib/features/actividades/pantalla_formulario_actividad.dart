@@ -5,19 +5,29 @@ import '../../app/theme/dimensiones_app.dart';
 import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/estado_vacio.dart';
+import '../viajes/modelos/viaje.dart';
 import 'modelos/actividad_viaje.dart';
 import 'servicios/repositorio_actividades.dart';
+import 'validacion/validadores_actividad.dart';
 
 /// Formulario para crear o editar una actividad del itinerario.
 class PantallaFormularioActividad extends StatefulWidget {
   const PantallaFormularioActividad({
     super.key,
     required this.viajeId,
+    this.viaje,
     this.actividadId,
     this.repositorio,
   });
 
   final String viajeId;
+
+  /// Viaje ya cargado por la pantalla de detalle.
+  ///
+  /// Permite validar inmediatamente que la actividad quede dentro del rango
+  /// del viaje. La base de datos también aplica esta regla.
+  final Viaje? viaje;
+
   final String? actividadId;
   final FuenteActividades? repositorio;
 
@@ -89,7 +99,8 @@ class _PantallaFormularioActividadState
 
       _actividadOriginal = actividad;
       _tituloController.text = actividad.titulo;
-      _fechaController.text = _formatearFecha(actividad.fecha);
+      _fechaController.text =
+          ValidadoresActividad.formatearFecha(actividad.fecha);
       _horaController.text = actividad.horaInicio ?? '';
       _lugarController.text = actividad.lugar ?? '';
       _notasController.text = actividad.notas ?? '';
@@ -109,70 +120,6 @@ class _PantallaFormularioActividadState
     }
   }
 
-  String? _validarTitulo(String? valor) {
-    final titulo = valor?.trim() ?? '';
-
-    if (titulo.length < 2) {
-      return 'El título debe tener al menos 2 caracteres.';
-    }
-
-    if (titulo.length > 120) {
-      return 'El título no puede superar los 120 caracteres.';
-    }
-
-    return null;
-  }
-
-  String? _validarFecha(String? valor) {
-    if (_parsearFecha(valor) == null) {
-      return 'Usa el formato DD/MM/AAAA.';
-    }
-
-    return null;
-  }
-
-  String? _validarHora(String? valor) {
-    final hora = valor?.trim() ?? '';
-
-    if (hora.isEmpty) {
-      return null;
-    }
-
-    if (!RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(hora)) {
-      return 'Usa el formato HH:mm.';
-    }
-
-    return null;
-  }
-
-  DateTime? _parsearFecha(String? valor) {
-    final partes = (valor ?? '').trim().split('/');
-
-    if (partes.length != 3) {
-      return null;
-    }
-
-    final dia = int.tryParse(partes[0]);
-    final mes = int.tryParse(partes[1]);
-    final anio = int.tryParse(partes[2]);
-
-    if (dia == null || mes == null || anio == null) {
-      return null;
-    }
-
-    if (anio < 2000 || anio > 2100 || mes < 1 || mes > 12) {
-      return null;
-    }
-
-    final fecha = DateTime(anio, mes, dia);
-
-    if (fecha.year != anio || fecha.month != mes || fecha.day != dia) {
-      return null;
-    }
-
-    return fecha;
-  }
-
   Future<void> _guardar() async {
     FocusScope.of(context).unfocus();
 
@@ -180,7 +127,25 @@ class _PantallaFormularioActividadState
       return;
     }
 
-    final fecha = _parsearFecha(_fechaController.text)!;
+    final fecha = ValidadoresActividad.parsearFecha(
+      _fechaController.text,
+    )!;
+
+    final viaje = widget.viaje;
+
+    if (viaje != null) {
+      final errorFecha = ValidadoresActividad.fechaDentroDelViaje(
+        fecha,
+        viaje,
+      );
+
+      if (errorFecha != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorFecha)),
+        );
+        return;
+      }
+    }
 
     setState(() {
       _guardando = true;
@@ -278,7 +243,11 @@ class _PantallaFormularioActividadState
                           ),
                           const SizedBox(height: DimensionesApp.espacio8),
                           Text(
-                            'La hora y el lugar son opcionales.',
+                            widget.viaje == null
+                                ? 'La hora y el lugar son opcionales.'
+                                : 'Programa actividades entre '
+                                    '${ValidadoresActividad.formatearFecha(widget.viaje!.fechaInicio)} '
+                                    'y ${ValidadoresActividad.formatearFecha(widget.viaje!.fechaFin)}.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: DimensionesApp.espacio24),
@@ -288,8 +257,8 @@ class _PantallaFormularioActividadState
                             textCapitalization:
                                 TextCapitalization.sentences,
                             textInputAction: TextInputAction.next,
-                            maxLength: 120,
-                            validator: _validarTitulo,
+                            maxLength: ValidadoresActividad.tituloMaximo,
+                            validator: ValidadoresActividad.titulo,
                             decoration: const InputDecoration(
                               labelText: 'Actividad',
                               hintText: 'Ej. Visitar San Jacinto',
@@ -303,7 +272,7 @@ class _PantallaFormularioActividadState
                             enabled: !_guardando,
                             keyboardType: TextInputType.datetime,
                             textInputAction: TextInputAction.next,
-                            validator: _validarFecha,
+                            validator: ValidadoresActividad.fecha,
                             decoration: const InputDecoration(
                               labelText: 'Fecha',
                               hintText: 'DD/MM/AAAA',
@@ -317,7 +286,7 @@ class _PantallaFormularioActividadState
                             enabled: !_guardando,
                             keyboardType: TextInputType.datetime,
                             textInputAction: TextInputAction.next,
-                            validator: _validarHora,
+                            validator: ValidadoresActividad.hora,
                             decoration: const InputDecoration(
                               labelText: 'Hora opcional',
                               hintText: 'HH:mm',
@@ -331,7 +300,8 @@ class _PantallaFormularioActividadState
                             enabled: !_guardando,
                             textCapitalization: TextCapitalization.words,
                             textInputAction: TextInputAction.next,
-                            maxLength: 160,
+                            maxLength: ValidadoresActividad.lugarMaximo,
+                            validator: ValidadoresActividad.lugar,
                             decoration: const InputDecoration(
                               labelText: 'Lugar opcional',
                               hintText: 'Ej. Plaza principal',
@@ -345,7 +315,8 @@ class _PantallaFormularioActividadState
                             keyboardType: TextInputType.multiline,
                             minLines: 3,
                             maxLines: 5,
-                            maxLength: 1000,
+                            maxLength: ValidadoresActividad.notasMaximas,
+                            validator: ValidadoresActividad.notas,
                             decoration: const InputDecoration(
                               labelText: 'Notas opcionales',
                               hintText:
@@ -379,12 +350,5 @@ class _PantallaFormularioActividadState
                   ),
                 ),
     );
-  }
-
-  static String _formatearFecha(DateTime fecha) {
-    final dia = fecha.day.toString().padLeft(2, '0');
-    final mes = fecha.month.toString().padLeft(2, '0');
-
-    return '$dia/$mes/${fecha.year}';
   }
 }

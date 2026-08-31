@@ -36,11 +36,13 @@ void main() {
     );
   });
 
-  testWidgets('Viajes muestra su estado inicial', (tester) async {
+  testWidgets('Viajes conserva su encabezado aunque no haya Supabase', (
+    tester,
+  ) async {
     await _probarRuta(
       tester,
       ruta: RutasApp.viajes,
-      textoEsperado: 'Todavía no tienes viajes',
+      textoEsperado: 'Organiza tus viajes',
     );
   });
 

@@ -8,19 +8,16 @@ import '../../features/explorar/pantalla_explorar.dart';
 import '../../features/inicio/pantalla_inicio.dart';
 import '../../features/perfil/pantalla_perfil.dart';
 import '../../features/presentacion/pantalla_presentacion.dart';
+import '../../features/viajes/pantalla_detalle_viaje.dart';
+import '../../features/viajes/pantalla_formulario_viaje.dart';
 import '../../features/viajes/pantalla_viajes.dart';
 import '../../shared/widgets/navegacion_principal.dart';
-import 'pantalla_ruta_temporal.dart';
 import 'rutas_app.dart';
 
 /// Configuración declarativa y centralizada de navegación de Destino+.
 abstract final class RouterApp {
   static final GoRouter router = crear();
 
-  /// Construye el router.
-  ///
-  /// [protegerRutas] se mantiene configurable para poder validar de forma
-  /// aislada la estructura de navegación sin depender de una sesión real.
   static GoRouter crear({
     EstadoSesion? estadoSesion,
     bool protegerRutas = true,
@@ -32,9 +29,7 @@ abstract final class RouterApp {
       initialLocation: ubicacionInicial,
       refreshListenable: protegerRutas ? estado : null,
       redirect: (context, state) {
-        if (!protegerRutas) {
-          return null;
-        }
+        if (!protegerRutas) return null;
 
         final ubicacion = state.matchedLocation;
         final esRutaAcceso = ubicacion == RutasApp.inicioSesion ||
@@ -94,23 +89,15 @@ abstract final class RouterApp {
                   routes: [
                     GoRoute(
                       path: 'nuevo',
-                      builder: (context, state) => const PantallaRutaTemporal(
-                        titulo: 'Nuevo viaje',
-                        descripcion:
-                            'El formulario de viajes se implementará en la etapa del CRUD.',
-                      ),
+                      builder: (context, state) =>
+                          const PantallaFormularioViaje(),
                     ),
                     GoRoute(
                       path: ':id',
                       builder: (context, state) {
                         final id = state.pathParameters['id'] ?? '';
 
-                        return PantallaRutaTemporal(
-                          titulo: 'Detalle del viaje',
-                          descripcion:
-                              'Detalle provisional del viaje $id. Su contenido real se '
-                              'implementará en la etapa del CRUD.',
-                        );
+                        return PantallaDetalleViaje(viajeId: id);
                       },
                       routes: [
                         GoRoute(
@@ -118,11 +105,8 @@ abstract final class RouterApp {
                           builder: (context, state) {
                             final id = state.pathParameters['id'] ?? '';
 
-                            return PantallaRutaTemporal(
-                              titulo: 'Editar viaje',
-                              descripcion:
-                                  'Edición provisional del viaje $id. El formulario real se '
-                                  'implementará en la etapa del CRUD.',
+                            return PantallaFormularioViaje(
+                              viajeId: id,
                             );
                           },
                         ),

@@ -259,8 +259,9 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                       const Center(child: CircularProgressIndicator()),
                     ],
                     const SizedBox(height: DimensionesApp.espacio16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           '¿Ya tienes una cuenta?',

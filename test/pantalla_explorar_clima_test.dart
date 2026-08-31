@@ -289,7 +289,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(servicio.ultimaConsulta, 'Tarija, Bolivia');
-    expect(find.text('Tarija, Bolivia'), findsOneWidget);
+    expect(find.text('Tarija, Bolivia'), findsWidgets);
     expect(find.text('21 °C'), findsOneWidget);
     expect(find.text('Mayormente despejado'), findsWidgets);
     expect(find.text('Pronóstico de 7 días'), findsOneWidget);

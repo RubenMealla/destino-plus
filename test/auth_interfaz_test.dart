@@ -71,7 +71,7 @@ void main() {
       await tester.pumpAndSettle();
 
       var campoClave =
-          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+          tester.widget<EditableText>(find.byType(EditableText).at(1));
       expect(campoClave.obscureText, isTrue);
       expect(find.byTooltip('Mostrar contraseña'), findsOneWidget);
 
@@ -79,7 +79,7 @@ void main() {
       await tester.pump();
 
       campoClave =
-          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+          tester.widget<EditableText>(find.byType(EditableText).at(1));
       expect(campoClave.obscureText, isFalse);
       expect(find.byTooltip('Ocultar contraseña'), findsOneWidget);
 
@@ -87,7 +87,7 @@ void main() {
       await tester.pump();
 
       campoClave =
-          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+          tester.widget<EditableText>(find.byType(EditableText).at(1));
       expect(campoClave.obscureText, isTrue);
     });
 

@@ -4,6 +4,7 @@ import 'package:destino_plus/features/viajes/pantalla_detalle_viaje.dart';
 import 'package:destino_plus/features/viajes/servicios/repositorio_viajes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'soporte/fuente_actividades_vacia_prueba.dart';
 
 class _FuenteViajesFalsa implements FuenteViajes {
   _FuenteViajesFalsa(this.viaje);
@@ -12,9 +13,7 @@ class _FuenteViajesFalsa implements FuenteViajes {
   bool eliminado = false;
 
   @override
-  Future<List<Viaje>> listar() async => [
-        if (viaje != null) viaje!,
-      ];
+  Future<List<Viaje>> listar() async => [?viaje];
 
   @override
   Future<Viaje?> obtenerPorId(String id) async {
@@ -73,6 +72,8 @@ void main() {
         home: PantallaDetalleViaje(
           viajeId: 'viaje-1',
           repositorio: fuente,
+          repositorioActividades:
+              const FuenteActividadesVaciaPrueba(),
         ),
       ),
     );
@@ -105,6 +106,8 @@ void main() {
             builder: (_) => PantallaDetalleViaje(
               viajeId: 'viaje-1',
               repositorio: fuente,
+              repositorioActividades:
+                  const FuenteActividadesVaciaPrueba(),
             ),
           ),
         ),

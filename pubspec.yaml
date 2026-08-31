@@ -1,11 +1,10 @@
 name: destino_plus
 description: "Aplicación móvil para la planificación y organización de viajes personales."
 publish_to: 'none'
-
-# Versión inicial del proyecto.
-# 0.1.0 = versión visible de desarrollo
+# Versión final inicial del proyecto.
+# 1.0.0 = versión visible de entrega
 # +1    = número interno de compilación
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.13.2

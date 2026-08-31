@@ -5,6 +5,7 @@ import 'package:destino_plus/features/viajes/pantalla_formulario_viaje.dart';
 import 'package:destino_plus/features/viajes/servicios/repositorio_viajes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'soporte/fuente_actividades_vacia_prueba.dart';
 
 class _FuenteViajesFalsa implements FuenteViajes {
   _FuenteViajesFalsa(this.viaje);
@@ -64,6 +65,8 @@ void main() {
         home: PantallaDetalleViaje(
           viajeId: 'viaje-1',
           repositorio: fuente,
+          repositorioActividades:
+              const FuenteActividadesVaciaPrueba(),
         ),
       ),
     );

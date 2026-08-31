@@ -24,43 +24,46 @@ abstract interface class AlmacenPreferencias {
 class AlmacenPreferenciasSharedPreferences implements AlmacenPreferencias {
   AlmacenPreferenciasSharedPreferences({
     SharedPreferencesAsync? preferencias,
-  }) : _preferencias = preferencias ?? SharedPreferencesAsync();
+  }) : _preferencias = preferencias;
 
-  final SharedPreferencesAsync _preferencias;
+  SharedPreferencesAsync? _preferencias;
+
+  SharedPreferencesAsync get _instancia =>
+      _preferencias ??= SharedPreferencesAsync();
 
   @override
   Future<String?> leerTexto(String clave) {
-    return _preferencias.getString(clave);
+    return _instancia.getString(clave);
   }
 
   @override
   Future<bool?> leerBooleano(String clave) {
-    return _preferencias.getBool(clave);
+    return _instancia.getBool(clave);
   }
 
   @override
   Future<int?> leerEntero(String clave) {
-    return _preferencias.getInt(clave);
+    return _instancia.getInt(clave);
   }
 
   @override
   Future<void> guardarTexto(String clave, String valor) async {
-    await _preferencias.setString(clave, valor);
+    await _instancia.setString(clave, valor);
   }
 
   @override
   Future<void> guardarBooleano(String clave, bool valor) async {
-    await _preferencias.setBool(clave, valor);
+    await _instancia.setBool(clave, valor);
   }
 
   @override
   Future<void> guardarEntero(String clave, int valor) async {
-    await _preferencias.setInt(clave, valor);
+    await _instancia.setInt(clave, valor);
   }
 
   @override
   Future<void> eliminar(String clave) async {
-    await _preferencias.remove(clave);
+    await _instancia.remove(clave);
   }
 }
 

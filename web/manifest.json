@@ -1,11 +1,11 @@
 {
-    "name": "destino_plus",
-    "short_name": "destino_plus",
+    "name": "Destino+",
+    "short_name": "Destino+",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Aplicación móvil para la planificación y organización de viajes personales.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

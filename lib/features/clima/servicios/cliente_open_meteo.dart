@@ -14,8 +14,23 @@ class ExcepcionClima implements Exception {
   String toString() => mensaje;
 }
 
+/// Contrato remoto utilizado por la lógica de clima.
+///
+/// Permite probar la consulta por destino sin realizar peticiones reales.
+abstract interface class FuenteClimaRemota {
+  Future<List<UbicacionClima>> buscarUbicaciones(
+    String consulta, {
+    int limite = 5,
+  });
+
+  Future<PronosticoClima> obtenerPronostico({
+    required double latitud,
+    required double longitud,
+  });
+}
+
 /// Cliente HTTP mínimo para los servicios públicos de Open-Meteo.
-class ClienteOpenMeteo {
+class ClienteOpenMeteo implements FuenteClimaRemota {
   ClienteOpenMeteo({
     http.Client? clienteHttp,
   }) : _clienteHttp = clienteHttp ?? http.Client();
@@ -30,6 +45,7 @@ class ClienteOpenMeteo {
   ///
   /// Open-Meteo acepta nombres de ciudades, códigos postales y calificadores
   /// como país o región.
+  @override
   Future<List<UbicacionClima>> buscarUbicaciones(
     String consulta, {
     int limite = 5,
@@ -74,6 +90,7 @@ class ClienteOpenMeteo {
   }
 
   /// Obtiene condiciones actuales y siete días de pronóstico.
+  @override
   Future<PronosticoClima> obtenerPronostico({
     required double latitud,
     required double longitud,
@@ -115,8 +132,6 @@ class ClienteOpenMeteo {
 
     try {
       return PronosticoClima.fromMap(respuesta);
-    } on ExcepcionClima {
-      rethrow;
     } catch (_) {
       throw const ExcepcionClima(
         'Open-Meteo devolvió un pronóstico con formato inesperado.',
@@ -146,9 +161,11 @@ class ClienteOpenMeteo {
 
     try {
       final decodificado = jsonDecode(respuesta.body);
+
       if (decodificado is! Map<String, dynamic>) {
         throw const FormatException();
       }
+
       cuerpo = decodificado;
     } catch (_) {
       throw const ExcepcionClima(

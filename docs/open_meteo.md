@@ -61,33 +61,74 @@ timezone=auto
 forecast_days=7
 ```
 
-Las variables diarias requieren una zona horaria. `timezone=auto` permite que
-Open-Meteo resuelva la zona correspondiente a las coordenadas.
+## Consulta por destino
+
+`ServicioClimaDestino` conecta ambos endpoints.
+
+Ejemplo conceptual:
+
+```text
+"Tarija, Bolivia"
+        |
+        v
+buscarUbicaciones()
+        |
+        v
+UbicacionClima
+        |
+        v
+obtenerPronostico()
+        |
+        v
+ClimaDestino
+```
+
+El servicio normaliza el texto, busca hasta ocho opciones y selecciona la que
+mejor coincide con las palabras del destino guardado.
+
+Si una consulta como:
+
+```text
+Tarija, Bolivia
+```
+
+no devuelve resultados, se intenta una segunda búsqueda con:
+
+```text
+Tarija
+```
+
+Esto permite trabajar mejor con destinos escritos de distintas formas por el
+usuario.
+
+Si no existe ninguna ubicación compatible, se genera `ExcepcionClima` con un
+mensaje que la interfaz podrá mostrar sin inventar datos meteorológicos.
 
 ## Arquitectura
 
 ```text
-ClienteOpenMeteo
-    |
-    +-- buscarUbicaciones()
-    |
-    +-- obtenerPronostico()
-            |
-            +-- PronosticoClima
-                    |
-                    +-- ClimaActual
-                    +-- PronosticoDiario
+Pantalla / estado de interfaz
+        |
+        +-- ServicioClimaDestino
+                |
+                +-- FuenteClimaRemota
+                        |
+                        +-- ClienteOpenMeteo
+                                |
+                                +-- Geocodificación
+                                +-- Pronóstico
 ```
 
-La interfaz todavía no consume este cliente en el primer commit de la rama.
-La integración con destinos y los estados de carga/error se implementará en
-los siguientes commits.
+La interfaz visual y sus estados de `loading`, error, ausencia de resultados
+y respuesta correcta se incorporarán en el siguiente commit.
 
 ## Errores
 
 `ClienteOpenMeteo` convierte problemas de red, respuestas HTTP no exitosas y
-formatos JSON inesperados en `ExcepcionClima` con mensajes comprensibles para
-la aplicación.
+formatos JSON inesperados en `ExcepcionClima`.
+
+`ServicioClimaDestino` agrega errores propios de búsqueda, por ejemplo cuando
+no se encuentra una ubicación para el texto escrito.
 
 ## Credenciales
 

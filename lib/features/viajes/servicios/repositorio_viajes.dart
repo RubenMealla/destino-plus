@@ -12,8 +12,29 @@ class ExcepcionViajes implements Exception {
   String toString() => mensaje;
 }
 
+/// Contrato utilizado por las pantallas de viajes.
+///
+/// Permite desacoplar la interfaz de Supabase y facilita las pruebas.
+abstract interface class FuenteViajes {
+  Future<List<Viaje>> listar();
+
+  Future<Viaje?> obtenerPorId(String id);
+
+  Future<Viaje> crear({
+    required String titulo,
+    required String destino,
+    required DateTime fechaInicio,
+    required DateTime fechaFin,
+    String? descripcion,
+  });
+
+  Future<Viaje> actualizar(Viaje viaje);
+
+  Future<void> eliminar(String id);
+}
+
 /// Acceso centralizado a la persistencia de viajes en Supabase.
-class RepositorioViajes {
+class RepositorioViajes implements FuenteViajes {
   const RepositorioViajes._();
 
   static const RepositorioViajes instancia = RepositorioViajes._();
@@ -35,6 +56,7 @@ class RepositorioViajes {
     return usuario;
   }
 
+  @override
   Future<List<Viaje>> listar() async {
     try {
       final respuesta = await _cliente
@@ -57,6 +79,7 @@ class RepositorioViajes {
     }
   }
 
+  @override
   Future<Viaje?> obtenerPorId(String id) async {
     try {
       final respuesta = await _cliente
@@ -78,6 +101,7 @@ class RepositorioViajes {
     }
   }
 
+  @override
   Future<Viaje> crear({
     required String titulo,
     required String destino,
@@ -119,6 +143,7 @@ class RepositorioViajes {
     }
   }
 
+  @override
   Future<Viaje> actualizar(Viaje viaje) async {
     _validarDatos(
       titulo: viaje.titulo,
@@ -146,6 +171,7 @@ class RepositorioViajes {
     }
   }
 
+  @override
   Future<void> eliminar(String id) async {
     try {
       await _cliente.from('viajes').delete().eq('id', id);

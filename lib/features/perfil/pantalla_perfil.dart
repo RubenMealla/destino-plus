@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/preferencias/estado_apariencia.dart';
+import '../../app/preferencias/estado_unidades.dart';
 import '../../app/theme/dimensiones_app.dart';
 import '../../features/auth/estado/estado_sesion.dart';
 import '../../features/auth/servicios/servicio_autenticacion.dart';
@@ -21,6 +22,7 @@ class PantallaPerfil extends StatefulWidget {
 class _PantallaPerfilState extends State<PantallaPerfil> {
   bool _cerrandoSesion = false;
   bool _guardandoApariencia = false;
+  bool _guardandoUnidad = false;
 
   Future<void> _cerrarSesion() async {
     if (_cerrandoSesion) {
@@ -84,11 +86,48 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
     }
   }
 
+  Future<void> _cambiarUnidadTemperatura(
+    UnidadTemperatura unidad,
+  ) async {
+    final estado = context.read<EstadoUnidades>();
+
+    if (_guardandoUnidad || estado.temperatura == unidad) {
+      return;
+    }
+
+    setState(() {
+      _guardandoUnidad = true;
+    });
+
+    try {
+      await estado.cambiarTemperatura(unidad);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo guardar la unidad de temperatura.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _guardandoUnidad = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final estadoSesion = context.watch<EstadoSesion>();
     final estadoApariencia = context.watch<EstadoApariencia>();
+    final estadoUnidades = context.watch<EstadoUnidades>();
     final usuario = estadoSesion.usuario;
     final metadata = usuario?.userMetadata;
     final nombre = (metadata?['nombre'] as String?)?.trim();
@@ -136,7 +175,7 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
               const EncabezadoSeccion(
                 titulo: 'Ajustes',
                 subtitulo:
-                    'Personaliza cómo se ve Destino+ en este dispositivo.',
+                    'Personaliza Destino+ en este dispositivo.',
               ),
               const SizedBox(height: DimensionesApp.espacio16),
               TarjetaInformativa(
@@ -182,13 +221,58 @@ class _PantallaPerfilState extends State<PantallaPerfil> {
                 ),
               ),
               const SizedBox(height: DimensionesApp.espacio12),
+              TarjetaInformativa(
+                icono: Icons.thermostat_outlined,
+                titulo: 'Unidad de temperatura',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Elige cómo quieres ver las temperaturas del clima.',
+                      style: textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: DimensionesApp.espacio16),
+                    Wrap(
+                      spacing: DimensionesApp.espacio8,
+                      runSpacing: DimensionesApp.espacio8,
+                      children: [
+                        for (final unidad in UnidadTemperatura.values)
+                          ChoiceChip(
+                            label: Text(
+                              '${unidad.etiqueta} (${unidad.simbolo})',
+                            ),
+                            selected:
+                                estadoUnidades.temperatura == unidad,
+                            onSelected: _guardandoUnidad
+                                ? null
+                                : (_) => _cambiarUnidadTemperatura(
+                                      unidad,
+                                    ),
+                          ),
+                      ],
+                    ),
+                    if (_guardandoUnidad) ...[
+                      const SizedBox(height: DimensionesApp.espacio12),
+                      const LinearProgressIndicator(),
+                    ],
+                    const SizedBox(height: DimensionesApp.espacio12),
+                    Text(
+                      'Las consultas de Open-Meteo no cambian; Destino+ '
+                      'convierte únicamente la forma en que se muestran '
+                      'las temperaturas.',
+                      style: textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: DimensionesApp.espacio12),
               const TarjetaInformativa(
                 icono: Icons.storage_outlined,
                 titulo: 'Preferencias locales',
                 child: Text(
-                  'La apariencia se guarda en este dispositivo. Tus viajes '
-                  'y actividades continúan almacenándose de forma segura '
-                  'en Supabase.',
+                  'La apariencia y la unidad de temperatura se guardan en '
+                  'este dispositivo. Tus viajes y actividades continúan '
+                  'almacenándose de forma segura en Supabase.',
                 ),
               ),
               const SizedBox(height: DimensionesApp.espacio24),

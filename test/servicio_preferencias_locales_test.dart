@@ -51,6 +51,7 @@ void main() {
       );
 
       expect(await servicio.leerModoApariencia(), isNull);
+      expect(await servicio.leerUnidadTemperatura(), isNull);
     });
 
     test('guarda y recupera el modo de apariencia', () async {
@@ -74,6 +75,24 @@ void main() {
       await servicio.eliminarModoApariencia();
 
       expect(await servicio.leerModoApariencia(), isNull);
+    });
+
+    test('guarda, recupera y elimina la unidad de temperatura', () async {
+      final almacen = _AlmacenPreferenciasFalso();
+      final servicio = ServicioPreferenciasLocales(
+        almacen: almacen,
+      );
+
+      await servicio.guardarUnidadTemperatura('fahrenheit');
+
+      expect(
+        await servicio.leerUnidadTemperatura(),
+        'fahrenheit',
+      );
+
+      await servicio.eliminarUnidadTemperatura();
+
+      expect(await servicio.leerUnidadTemperatura(), isNull);
     });
   });
 }

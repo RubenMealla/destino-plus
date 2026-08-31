@@ -14,80 +14,90 @@ La persistencia local se implementa con:
 shared_preferences
 ```
 
-La aplicación no accede directamente al paquete desde las pantallas para leer
-o escribir claves. Existe una capa intermedia:
+La aplicación evita acceder directamente al paquete desde las pantallas:
 
 ```text
-MaterialApp
-    |
-    +-- EstadoApariencia
-            |
-            +-- ServicioPreferenciasLocales
-                    |
-                    +-- AlmacenPreferencias
-                            |
-                            +-- AlmacenPreferenciasSharedPreferences
+Perfil / Explorar
+       |
+       +-- EstadoApariencia
+       |
+       +-- EstadoUnidades
+               |
+               +-- ServicioPreferenciasLocales
+                       |
+                       +-- AlmacenPreferencias
+                               |
+                               +-- shared_preferences
 ```
 
-Esta separación permite:
+`EstadoApariencia` y `EstadoUnidades` se registran como estado global mediante
+Provider.
 
-- cambiar la implementación de persistencia sin modificar la interfaz;
-- probar la lógica sin depender del almacenamiento real del dispositivo;
-- mantener las claves centralizadas;
-- evitar mezclar preferencias locales con la persistencia de Supabase.
+Ambos se cargan antes de ejecutar `DestinoPlusApp`, por lo que las
+preferencias ya están disponibles cuando aparece la interfaz.
 
-## Apariencia persistente
+## Apariencia
 
-La preferencia utilizada es:
+Clave:
 
 ```text
 preferencias.modo_apariencia
 ```
 
-Los modos admitidos son:
+Opciones visibles:
 
 ```text
-sistema
-claro
-oscuro
+Sistema
+Claro
+Oscuro
 ```
 
-`EstadoApariencia` traduce esos valores a los modos de Flutter:
+## Unidad de temperatura
 
-| Destino+ | Flutter |
-| --- | --- |
-| `sistema` | `ThemeMode.system` |
-| `claro` | `ThemeMode.light` |
-| `oscuro` | `ThemeMode.dark` |
+Clave:
 
-La preferencia se carga antes de mostrar `DestinoPlusApp`, evitando que la
-aplicación cambie de tema visual unos instantes después de iniciarse.
+```text
+preferencias.unidad_temperatura
+```
 
-La pantalla `Perfil` permite seleccionar cualquiera de los tres modos. El
-cambio modifica el `themeMode` global de `MaterialApp`.
+Opciones visibles en Perfil:
 
-Cuando se selecciona `Sistema`, la preferencia explícita se elimina y la
-aplicación vuelve a respetar la configuración del dispositivo.
+```text
+Celsius (°C)
+Fahrenheit (°F)
+```
 
-Si el almacenamiento local no puede leerse durante el inicio, Destino+
-continúa usando `Sistema` como alternativa segura.
+Celsius es la opción predeterminada.
 
-## Alcance del almacenamiento local
+Open-Meteo continúa entregando las temperaturas utilizadas internamente por
+la integración actual. Si el usuario elige Fahrenheit, `EstadoUnidades`
+convierte únicamente la presentación:
 
-Sí corresponde a este mecanismo:
+```text
+°F = (°C × 9 / 5) + 32
+```
 
-- apariencia;
-- preferencias de visualización;
-- futuras unidades o ajustes pequeños del dispositivo.
+La preferencia se aplica al clima actual, sensación térmica, temperatura
+máxima y temperatura mínima de la pantalla Explorar.
 
-No se duplican mediante `shared_preferences`:
+El cambio se refleja en la interfaz y permanece después de cerrar y volver a
+abrir la aplicación.
+
+## Alcance
+
+Se almacenan localmente:
+
+- modo de apariencia;
+- unidad de temperatura.
+
+No se almacenan en `shared_preferences`:
 
 - contraseñas;
 - sesiones manuales;
 - viajes;
 - actividades;
-- claves privadas;
-- secretos de Supabase.
+- coordenadas GPS;
+- secretos o claves privadas.
 
-Los viajes y actividades siguen almacenándose en Supabase y protegidos
-mediante RLS.
+Los viajes y actividades continúan en Supabase. La ubicación solo se usa
+temporalmente cuando el usuario solicita su clima.

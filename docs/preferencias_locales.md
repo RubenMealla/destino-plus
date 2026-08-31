@@ -18,11 +18,13 @@ La aplicación no accede directamente al paquete desde las pantallas. Existe
 una capa intermedia:
 
 ```text
-ServicioPreferenciasLocales
+EstadoApariencia
         |
-        +-- AlmacenPreferencias
+        +-- ServicioPreferenciasLocales
                 |
-                +-- AlmacenPreferenciasSharedPreferences
+                +-- AlmacenPreferencias
+                        |
+                        +-- AlmacenPreferenciasSharedPreferences
 ```
 
 Esta separación permite:
@@ -32,24 +34,38 @@ Esta separación permite:
 - mantener las claves centralizadas;
 - evitar mezclar preferencias locales con la persistencia de Supabase.
 
-## Primer dato preparado
+## Apariencia persistente
 
-La primera preferencia reservada es:
+La preferencia utilizada es:
 
 ```text
 preferencias.modo_apariencia
 ```
 
-Todavía no modifica el tema visual en este commit. La integración con
-`ThemeMode` y la pantalla de Perfil se realizará en el siguiente bloque.
-
-Los valores previstos son:
+Los modos admitidos son:
 
 ```text
 sistema
 claro
 oscuro
 ```
+
+`EstadoApariencia` traduce esos valores a los modos de Flutter:
+
+| Destino+ | Flutter |
+| --- | --- |
+| `sistema` | `ThemeMode.system` |
+| `claro` | `ThemeMode.light` |
+| `oscuro` | `ThemeMode.dark` |
+
+Cuando se selecciona `Sistema`, la preferencia explícita se elimina y la
+aplicación vuelve a respetar la configuración del dispositivo.
+
+Si se encuentra un valor local desconocido o antiguo, Destino+ utiliza
+`Sistema` como alternativa segura.
+
+La conexión de este estado con `MaterialApp` y con la pantalla de Perfil se
+realizará en el siguiente commit.
 
 ## Qué sí corresponde a almacenamiento local
 

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/explorar/pantalla_explorar.dart';
+import '../../features/inicio/pantalla_inicio.dart';
+import '../../features/perfil/pantalla_perfil.dart';
 import '../../features/presentacion/pantalla_presentacion.dart';
+import '../../features/viajes/pantalla_viajes.dart';
 import '../../shared/widgets/navegacion_principal.dart';
 import 'pantalla_ruta_temporal.dart';
 import 'rutas_app.dart';
@@ -49,11 +53,7 @@ abstract final class RouterApp {
             routes: [
               GoRoute(
                 path: RutasApp.inicio,
-                builder: (context, state) => const PantallaRutaTemporal(
-                  titulo: 'Inicio',
-                  descripcion:
-                      'El panel principal se incorporará durante la estructura de pantallas.',
-                ),
+                builder: (context, state) => const PantallaInicio(),
               ),
             ],
           ),
@@ -61,11 +61,7 @@ abstract final class RouterApp {
             routes: [
               GoRoute(
                 path: RutasApp.viajes,
-                builder: (context, state) => const PantallaRutaTemporal(
-                  titulo: 'Viajes',
-                  descripcion:
-                      'La gestión de viajes se implementará en la etapa del CRUD.',
-                ),
+                builder: (context, state) => const PantallaViajes(),
                 routes: [
                   GoRoute(
                     path: 'nuevo',
@@ -111,11 +107,7 @@ abstract final class RouterApp {
             routes: [
               GoRoute(
                 path: RutasApp.explorar,
-                builder: (context, state) => const PantallaRutaTemporal(
-                  titulo: 'Explorar',
-                  descripcion:
-                      'Esta sección reunirá información útil asociada a los destinos.',
-                ),
+                builder: (context, state) => const PantallaExplorar(),
               ),
             ],
           ),
@@ -123,11 +115,7 @@ abstract final class RouterApp {
             routes: [
               GoRoute(
                 path: RutasApp.perfil,
-                builder: (context, state) => const PantallaRutaTemporal(
-                  titulo: 'Perfil',
-                  descripcion:
-                      'El perfil y los ajustes se implementarán en su etapa funcional.',
-                ),
+                builder: (context, state) => const PantallaPerfil(),
               ),
             ],
           ),

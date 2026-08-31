@@ -27,6 +27,7 @@ class PantallaDetalleViaje extends StatefulWidget {
 
 class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
   late Future<Viaje?> _carga;
+  bool _eliminando = false;
 
   FuenteViajes get _repositorio =>
       widget.repositorio ?? RepositorioViajes.instancia;
@@ -42,6 +43,10 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
   }
 
   Future<void> _editar() async {
+    if (_eliminando) {
+      return;
+    }
+
     final actualizado = await context.push<bool>(
       RutasApp.edicionDeViaje(widget.viajeId),
     );
@@ -55,6 +60,67 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
     }
   }
 
+  Future<void> _eliminar(Viaje viaje) async {
+    if (_eliminando) {
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Eliminar viaje'),
+          content: Text(
+            '¿Seguro que deseas eliminar "${viaje.titulo}"? '
+            'Esta acción no se puede deshacer.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _eliminando = true;
+    });
+
+    try {
+      await _repositorio.eliminar(viaje.id);
+
+      if (!mounted) {
+        return;
+      }
+
+      context.pop(true);
+    } on ExcepcionViajes catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _eliminando = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,7 +129,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
         actions: [
           IconButton(
             tooltip: 'Editar viaje',
-            onPressed: _editar,
+            onPressed: _eliminando ? null : _editar,
             icon: const Icon(Icons.edit_outlined),
           ),
         ],
@@ -168,8 +234,24 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
                   BotonAccion(
                     texto: 'Editar viaje',
                     icono: Icons.edit_outlined,
-                    onPressed: _editar,
+                    onPressed: _eliminando ? null : _editar,
                   ),
+                  const SizedBox(height: DimensionesApp.espacio12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed:
+                          _eliminando ? null : () => _eliminar(viaje),
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: Text(
+                        _eliminando ? 'Eliminando...' : 'Eliminar viaje',
+                      ),
+                    ),
+                  ),
+                  if (_eliminando) ...[
+                    const SizedBox(height: DimensionesApp.espacio12),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
                 ],
               ),
             ),
@@ -182,6 +264,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
   static String _formatearFecha(DateTime fecha) {
     final dia = fecha.day.toString().padLeft(2, '0');
     final mes = fecha.month.toString().padLeft(2, '0');
+
     return '$dia/$mes/${fecha.year}';
   }
 
@@ -198,6 +281,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
     );
 
     final dias = fin.difference(inicio).inDays + 1;
+
     return dias == 1 ? '1 día' : '$dias días';
   }
 }

@@ -7,6 +7,7 @@ import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/estado_vacio.dart';
 import 'modelos/viaje.dart';
 import 'servicios/repositorio_viajes.dart';
+import 'validacion/validadores_viaje.dart';
 
 /// Formulario para crear o editar un viaje.
 class PantallaFormularioViaje extends StatefulWidget {
@@ -60,7 +61,9 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
     try {
       final viaje = await _repositorio.obtenerPorId(widget.viajeId!);
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       if (viaje == null) {
         setState(() {
@@ -81,7 +84,9 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
         _cargando = false;
       });
     } on ExcepcionViajes catch (error) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _errorCarga = error.mensaje;
@@ -100,50 +105,6 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
     super.dispose();
   }
 
-  String? _validarTexto(
-    String? valor, {
-    required String nombre,
-    required int maximo,
-  }) {
-    final texto = valor?.trim() ?? '';
-
-    if (texto.length < 2) {
-      return '$nombre debe tener al menos 2 caracteres.';
-    }
-
-    if (texto.length > maximo) {
-      return '$nombre no puede superar $maximo caracteres.';
-    }
-
-    return null;
-  }
-
-  String? _validarFecha(String? valor) {
-    if (_parsearFecha(valor) == null) {
-      return 'Usa el formato DD/MM/AAAA.';
-    }
-    return null;
-  }
-
-  DateTime? _parsearFecha(String? valor) {
-    final partes = (valor ?? '').trim().split('/');
-    if (partes.length != 3) return null;
-
-    final dia = int.tryParse(partes[0]);
-    final mes = int.tryParse(partes[1]);
-    final anio = int.tryParse(partes[2]);
-
-    if (dia == null || mes == null || anio == null) return null;
-    if (anio < 2000 || anio > 2100 || mes < 1 || mes > 12) return null;
-
-    final fecha = DateTime(anio, mes, dia);
-    if (fecha.year != anio || fecha.month != mes || fecha.day != dia) {
-      return null;
-    }
-
-    return fecha;
-  }
-
   Future<void> _guardar() async {
     FocusScope.of(context).unfocus();
 
@@ -151,16 +112,18 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
       return;
     }
 
-    final inicio = _parsearFecha(_fechaInicioController.text)!;
-    final fin = _parsearFecha(_fechaFinController.text)!;
+    final inicio = ValidadoresViaje.parsearFecha(
+      _fechaInicioController.text,
+    )!;
+    final fin = ValidadoresViaje.parsearFecha(
+      _fechaFinController.text,
+    )!;
 
-    if (fin.isBefore(inicio)) {
+    final errorRango = ValidadoresViaje.rangoFechas(inicio, fin);
+
+    if (errorRango != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'La fecha de fin no puede ser anterior a la fecha de inicio.',
-          ),
-        ),
+        SnackBar(content: Text(errorRango)),
       );
       return;
     }
@@ -199,11 +162,15 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
         );
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       context.pop(true);
     } on ExcepcionViajes catch (error) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.mensaje)),
@@ -265,12 +232,8 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
                             enabled: !_guardando,
                             textInputAction: TextInputAction.next,
                             textCapitalization: TextCapitalization.sentences,
-                            maxLength: 100,
-                            validator: (valor) => _validarTexto(
-                              valor,
-                              nombre: 'El título',
-                              maximo: 100,
-                            ),
+                            maxLength: ValidadoresViaje.tituloMaximo,
+                            validator: ValidadoresViaje.titulo,
                             decoration: const InputDecoration(
                               labelText: 'Título del viaje',
                               hintText: 'Ej. Vacaciones de invierno',
@@ -283,12 +246,8 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
                             enabled: !_guardando,
                             textInputAction: TextInputAction.next,
                             textCapitalization: TextCapitalization.words,
-                            maxLength: 120,
-                            validator: (valor) => _validarTexto(
-                              valor,
-                              nombre: 'El destino',
-                              maximo: 120,
-                            ),
+                            maxLength: ValidadoresViaje.destinoMaximo,
+                            validator: ValidadoresViaje.destino,
                             decoration: const InputDecoration(
                               labelText: 'Destino',
                               hintText: 'Ej. Tarija, Bolivia',
@@ -301,7 +260,7 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
                             enabled: !_guardando,
                             keyboardType: TextInputType.datetime,
                             textInputAction: TextInputAction.next,
-                            validator: _validarFecha,
+                            validator: ValidadoresViaje.fecha,
                             decoration: const InputDecoration(
                               labelText: 'Fecha de inicio',
                               hintText: 'DD/MM/AAAA',
@@ -315,7 +274,7 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
                             enabled: !_guardando,
                             keyboardType: TextInputType.datetime,
                             textInputAction: TextInputAction.next,
-                            validator: _validarFecha,
+                            validator: ValidadoresViaje.fecha,
                             decoration: const InputDecoration(
                               labelText: 'Fecha de fin',
                               hintText: 'DD/MM/AAAA',
@@ -330,7 +289,8 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
                             keyboardType: TextInputType.multiline,
                             minLines: 3,
                             maxLines: 5,
-                            maxLength: 1000,
+                            maxLength: ValidadoresViaje.descripcionMaxima,
+                            validator: ValidadoresViaje.descripcion,
                             decoration: const InputDecoration(
                               labelText: 'Descripción opcional',
                               hintText: 'Notas generales sobre el viaje',
@@ -367,6 +327,7 @@ class _PantallaFormularioViajeState extends State<PantallaFormularioViaje> {
   static String _formatearFecha(DateTime fecha) {
     final dia = fecha.day.toString().padLeft(2, '0');
     final mes = fecha.month.toString().padLeft(2, '0');
+
     return '$dia/$mes/${fecha.year}';
   }
 }

@@ -50,10 +50,30 @@ class _PantallaViajesState extends State<PantallaViajes> {
     if (creado == true && mounted) {
       await _recargar();
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Viaje creado correctamente.')),
+      );
+    }
+  }
+
+  Future<void> _abrirDetalle(Viaje viaje) async {
+    final huboCambios = await context.push<bool>(
+      RutasApp.detalleDeViaje(viaje.id),
+    );
+
+    if (huboCambios == true && mounted) {
+      await _recargar();
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lista de viajes actualizada.')),
       );
     }
   }
@@ -143,11 +163,7 @@ class _PantallaViajesState extends State<PantallaViajes> {
 
                         return TarjetaViaje(
                           viaje: viaje,
-                          onTap: () {
-                            context.push(
-                              RutasApp.detalleDeViaje(viaje.id),
-                            );
-                          },
+                          onTap: () => _abrirDetalle(viaje),
                         );
                       },
                     ),

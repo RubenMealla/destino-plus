@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../app/config/configuracion_supabase.dart';
 import '../modelos/viaje.dart';
+import '../validacion/validadores_viaje.dart';
 
 class ExcepcionViajes implements Exception {
   const ExcepcionViajes(this.mensaje);
@@ -43,16 +44,19 @@ class RepositorioViajes implements FuenteViajes {
     if (!ConfiguracionSupabase.inicializado) {
       throw const ExcepcionViajes('Supabase todavía no está configurado.');
     }
+
     return Supabase.instance.client;
   }
 
   User get _usuarioActual {
     final usuario = _cliente.auth.currentUser;
+
     if (usuario == null) {
       throw const ExcepcionViajes(
         'Debes iniciar sesión para administrar tus viajes.',
       );
     }
+
     return usuario;
   }
 
@@ -88,7 +92,10 @@ class RepositorioViajes implements FuenteViajes {
           .eq('id', id)
           .maybeSingle();
 
-      if (respuesta == null) return null;
+      if (respuesta == null) {
+        return null;
+      }
+
       return Viaje.fromMap(respuesta);
     } on ExcepcionViajes {
       rethrow;
@@ -191,41 +198,27 @@ class RepositorioViajes implements FuenteViajes {
     required DateTime fechaFin,
     String? descripcion,
   }) {
-    if (titulo.trim().length < 2) {
-      throw const ExcepcionViajes(
-        'El título debe tener al menos 2 caracteres.',
-      );
-    }
+    final errores = <String?>[
+      ValidadoresViaje.titulo(titulo),
+      ValidadoresViaje.destino(destino),
+      ValidadoresViaje.descripcion(descripcion),
+      ValidadoresViaje.rangoFechas(fechaInicio, fechaFin),
+    ];
 
-    if (destino.trim().length < 2) {
-      throw const ExcepcionViajes(
-        'El destino debe tener al menos 2 caracteres.',
-      );
-    }
-
-    final inicio = DateTime(
-      fechaInicio.year,
-      fechaInicio.month,
-      fechaInicio.day,
-    );
-    final fin = DateTime(fechaFin.year, fechaFin.month, fechaFin.day);
-
-    if (fin.isBefore(inicio)) {
-      throw const ExcepcionViajes(
-        'La fecha de fin no puede ser anterior a la fecha de inicio.',
-      );
-    }
-
-    if ((descripcion?.trim().length ?? 0) > 1000) {
-      throw const ExcepcionViajes(
-        'La descripción no puede superar los 1000 caracteres.',
-      );
+    for (final error in errores) {
+      if (error != null) {
+        throw ExcepcionViajes(error);
+      }
     }
   }
 
   String? _normalizarDescripcion(String? valor) {
     final descripcion = valor?.trim();
-    if (descripcion == null || descripcion.isEmpty) return null;
+
+    if (descripcion == null || descripcion.isEmpty) {
+      return null;
+    }
+
     return descripcion;
   }
 

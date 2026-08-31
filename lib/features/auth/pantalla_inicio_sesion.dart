@@ -6,13 +6,10 @@ import '../../app/theme/dimensiones_app.dart';
 import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/marca_destino_plus.dart';
+import 'servicios/servicio_autenticacion.dart';
 import 'widgets/campo_clave.dart';
 
-/// Interfaz inicial para el acceso de usuarios.
-///
-/// En este commit se implementan la presentación, los campos y las
-/// validaciones locales. La autenticación real se integrará en el siguiente
-/// bloque de trabajo.
+/// Pantalla de acceso mediante correo electrónico y contraseña.
 class PantallaInicioSesion extends StatefulWidget {
   const PantallaInicioSesion({super.key});
 
@@ -24,6 +21,8 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
   final _formKey = GlobalKey<FormState>();
   final _correoController = TextEditingController();
   final _claveController = TextEditingController();
+
+  bool _procesando = false;
 
   @override
   void dispose() {
@@ -59,20 +58,43 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
     return null;
   }
 
-  void _validarFormulario() {
+  Future<void> _iniciarSesion() async {
     FocusScope.of(context).unfocus();
 
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!(_formKey.currentState?.validate() ?? false) || _procesando) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Formulario válido. La autenticación se conectará en la siguiente etapa.',
-        ),
-      ),
-    );
+    setState(() {
+      _procesando = true;
+    });
+
+    try {
+      await ServicioAutenticacion.instancia.iniciarSesion(
+        correo: _correoController.text,
+        clave: _claveController.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      context.go(RutasApp.inicio);
+    } on ExcepcionAutenticacion catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _procesando = false;
+        });
+      }
+    }
   }
 
   @override
@@ -116,6 +138,7 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
                     const SizedBox(height: DimensionesApp.espacio32),
                     TextFormField(
                       controller: _correoController,
+                      enabled: !_procesando,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [
@@ -134,14 +157,18 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
                       etiqueta: 'Contraseña',
                       validator: _validarClave,
                       textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _validarFormulario(),
+                      onFieldSubmitted: (_) => _iniciarSesion(),
                     ),
                     const SizedBox(height: DimensionesApp.espacio24),
                     BotonAccion(
-                      texto: 'Iniciar sesión',
-                      icono: Icons.login_rounded,
-                      onPressed: _validarFormulario,
+                      texto: _procesando ? 'Iniciando sesión...' : 'Iniciar sesión',
+                      icono: _procesando ? null : Icons.login_rounded,
+                      onPressed: _procesando ? null : _iniciarSesion,
                     ),
+                    if (_procesando) ...[
+                      const SizedBox(height: DimensionesApp.espacio12),
+                      const Center(child: CircularProgressIndicator()),
+                    ],
                     const SizedBox(height: DimensionesApp.espacio16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -151,7 +178,9 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
                           style: textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => context.go(RutasApp.registro),
+                          onPressed: _procesando
+                              ? null
+                              : () => context.go(RutasApp.registro),
                           child: const Text('Crear cuenta'),
                         ),
                       ],

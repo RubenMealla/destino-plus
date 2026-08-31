@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/actividades/pantalla_formulario_actividad.dart';
 import '../../features/auth/estado/estado_sesion.dart';
 import '../../features/auth/pantalla_inicio_sesion.dart';
 import '../../features/auth/pantalla_registro.dart';
@@ -29,7 +30,9 @@ abstract final class RouterApp {
       initialLocation: ubicacionInicial,
       refreshListenable: protegerRutas ? estado : null,
       redirect: (context, state) {
-        if (!protegerRutas) return null;
+        if (!protegerRutas) {
+          return null;
+        }
 
         final ubicacion = state.matchedLocation;
         final esRutaAcceso = ubicacion == RutasApp.inicioSesion ||
@@ -107,6 +110,31 @@ abstract final class RouterApp {
 
                             return PantallaFormularioViaje(
                               viajeId: id,
+                            );
+                          },
+                        ),
+                        GoRoute(
+                          path: 'actividades/nueva',
+                          builder: (context, state) {
+                            final viajeId =
+                                state.pathParameters['id'] ?? '';
+
+                            return PantallaFormularioActividad(
+                              viajeId: viajeId,
+                            );
+                          },
+                        ),
+                        GoRoute(
+                          path: 'actividades/:actividadId/editar',
+                          builder: (context, state) {
+                            final viajeId =
+                                state.pathParameters['id'] ?? '';
+                            final actividadId =
+                                state.pathParameters['actividadId'] ?? '';
+
+                            return PantallaFormularioActividad(
+                              viajeId: viajeId,
+                              actividadId: actividadId,
                             );
                           },
                         ),

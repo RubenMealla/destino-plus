@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../features/presentacion/pantalla_presentacion.dart';
+import 'router/router_app.dart';
 import 'theme/tema_app.dart';
 
 class DestinoPlusApp extends StatelessWidget {
@@ -8,13 +8,13 @@ class DestinoPlusApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Destino+',
       debugShowCheckedModeBanner: false,
       theme: TemaApp.claro,
       darkTheme: TemaApp.oscuro,
       themeMode: ThemeMode.system,
-      home: const PantallaPresentacion(),
+      routerConfig: RouterApp.router,
     );
   }
 }

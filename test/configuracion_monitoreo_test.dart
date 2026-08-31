@@ -11,6 +11,7 @@ void main() {
 
       expect(configuracion.habilitado, isFalse);
       expect(configuracion.entornoNormalizado, 'development');
+      expect(configuracion.permiteEventoPrueba, isFalse);
     });
 
     test('un DSN configurado habilita el monitoreo remoto', () {
@@ -39,6 +40,35 @@ void main() {
       );
 
       expect(configuracion.entornoNormalizado, 'development');
+    });
+
+    test('permite evento de prueba solo si fue solicitado en desarrollo', () {
+      const configuracion = ConfiguracionMonitoreo(
+        dsn: 'https://clave-publica@ejemplo.ingest.sentry.io/123',
+        entorno: 'development',
+        eventoPruebaSolicitado: true,
+      );
+
+      expect(configuracion.permiteEventoPrueba, isTrue);
+    });
+
+    test('bloquea evento de prueba en production', () {
+      const configuracion = ConfiguracionMonitoreo(
+        dsn: 'https://clave-publica@ejemplo.ingest.sentry.io/123',
+        entorno: 'production',
+        eventoPruebaSolicitado: true,
+      );
+
+      expect(configuracion.permiteEventoPrueba, isFalse);
+    });
+
+    test('no envía evento si no fue solicitado explícitamente', () {
+      const configuracion = ConfiguracionMonitoreo(
+        dsn: 'https://clave-publica@ejemplo.ingest.sentry.io/123',
+        entorno: 'development',
+      );
+
+      expect(configuracion.permiteEventoPrueba, isFalse);
     });
   });
 }

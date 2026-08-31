@@ -8,8 +8,6 @@ import 'app/preferencias/estado_apariencia.dart';
 import 'app/preferencias/estado_unidades.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   final configuracionMonitoreo =
       ConfiguracionMonitoreo.desdeEntorno();
 
@@ -19,6 +17,12 @@ Future<void> main() async {
 }
 
 Future<void> _iniciarAplicacion() async {
+  // Cuando Sentry está habilitado, el SDK prepara el binding y el manejador
+  // global antes de ejecutar este callback. Al mantener toda la
+  // inicialización de Flutter dentro del mismo flujo evitamos "Zone mismatch"
+  // en Flutter Web.
+  WidgetsFlutterBinding.ensureInitialized();
+
   await ConfiguracionSupabase.inicializar();
   await EstadoApariencia.instancia.cargar();
   await EstadoUnidades.instancia.cargar();

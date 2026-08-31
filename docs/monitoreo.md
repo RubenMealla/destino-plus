@@ -10,18 +10,17 @@ Dependencia:
 sentry_flutter
 ```
 
-El SDK oficial para Flutter permite capturar errores de Flutter y, en Android,
-también integra la capa nativa correspondiente.
+El SDK oficial para Flutter permite capturar errores de Flutter y también
+errores de la capa nativa soportada en Android.
 
 ## Configuración
 
-La aplicación obtiene la configuración mediante `--dart-define`.
-
-Variables:
+Variables utilizadas:
 
 ```text
 SENTRY_DSN
 SENTRY_ENVIRONMENT
+SENTRY_TEST_EVENT
 ```
 
 Ejemplo versionado:
@@ -30,30 +29,21 @@ Ejemplo versionado:
 config/monitoreo.example.json
 ```
 
-Archivo local previsto:
+Archivo local:
 
 ```text
 config/monitoreo.local.json
 ```
 
-La regla existente:
+La regla:
 
 ```text
 config/*.local.json
 ```
 
-impide versionar el archivo local.
+evita que la configuración local termine en Git.
 
 ## Arranque con y sin monitoreo
-
-El flujo de inicio se encuentra en:
-
-```text
-lib/app/monitoreo/inicializador_monitoreo.dart
-lib/main.dart
-```
-
-Flujo:
 
 ```text
 main
@@ -66,31 +56,18 @@ main
          |
          +-- sí --> SentryFlutter.init(...)
                         |
-                        +-- inicializar Supabase
-                        +-- cargar preferencias
+                        +-- Supabase
+                        +-- preferencias
                         +-- runApp(DestinoPlusApp)
+                        |
+                        +-- evento de verificación opcional
 ```
 
-De esta forma el proyecto puede:
+La ausencia del DSN no impide utilizar Destino+.
 
-- ejecutar tests sin una cuenta Sentry;
-- desarrollarse sin DSN;
-- activar monitoreo mediante configuración externa;
-- capturar errores ocurridos durante la inicialización de servicios cuando
-  Sentry está habilitado.
+## Privacidad
 
-## Captura global
-
-`SentryFlutter.init` ejecuta el `appRunner` bajo las integraciones de captura
-de errores del SDK.
-
-Destino+ no reemplaza manualmente `FlutterError.onError` ni
-`PlatformDispatcher.onError`, porque el SDK oficial ya instala las
-integraciones correspondientes.
-
-## Privacidad y alcance
-
-La configuración aplicada establece:
+La configuración aplicada mantiene:
 
 ```text
 sendDefaultPii = false
@@ -99,53 +76,87 @@ attachViewHierarchy = false
 tracesSampleRate = 0
 ```
 
-El objetivo actual es monitorear errores, no comportamiento del usuario ni
-rendimiento.
-
 No se adjuntan deliberadamente:
 
-- capturas de pantalla;
-- jerarquía visual;
-- coordenadas GPS;
 - contraseñas;
+- tokens de sesión;
+- configuración privada de Supabase;
+- coordenadas GPS;
 - contenido de viajes;
 - contenido de actividades;
-- tokens o configuración privada de Supabase.
+- capturas de pantalla;
+- jerarquía visual.
 
-## DSN
+## Verificación controlada
 
-El DSN es una credencial de cliente utilizada por el SDK para enviar eventos.
+La integración incluye un mecanismo explícito para comprobar que Sentry recibe
+eventos reales sin provocar un crash artificial.
 
-Destino+ no guarda el DSN real en Git. Se proporcionará mediante:
+Se activa únicamente mediante:
+
+```text
+SENTRY_TEST_EVENT=true
+```
+
+y solo funciona si:
+
+```text
+SENTRY_DSN está configurado
+SENTRY_ENVIRONMENT no es production
+```
+
+En `production` el mecanismo permanece bloqueado aunque se solicite por error.
+
+Mensaje enviado:
+
+```text
+Destino+ - evento controlado de verificación de monitoreo
+```
+
+Etiquetas:
+
+```text
+destino_plus.verificacion = manual
+destino_plus.environment = development
+```
+
+El evento se envía con nivel:
+
+```text
+info
+```
+
+Además, la consola muestra el Event ID generado por el SDK.
+
+## Crear el proyecto real en Sentry
+
+Para la evidencia final:
+
+1. crear o iniciar sesión en una cuenta de Sentry;
+2. crear un proyecto para Flutter;
+3. asignar un nombre reconocible, por ejemplo `destino-plus`;
+4. obtener el DSN del proyecto desde su configuración de Client Keys/DSN;
+5. crear localmente:
 
 ```text
 config/monitoreo.local.json
 ```
 
-Nunca deben introducirse en Flutter:
+con:
 
-```text
-SENTRY_AUTH_TOKEN
-tokens administrativos
-claves privadas
+```json
+{
+  "SENTRY_DSN": "DSN_REAL_DEL_PROYECTO",
+  "SENTRY_ENVIRONMENT": "development",
+  "SENTRY_TEST_EVENT": true
+}
 ```
 
-## Ejecución sin Sentry
+No copiar el DSN real a documentación versionada.
 
-La ejecución habitual continúa siendo válida:
+## Ejecutar la verificación
 
-```powershell
-flutter run -d chrome --dart-define-from-file=config/supabase.local.json
-```
-
-En ese caso `SENTRY_DSN` estará vacío y la aplicación arrancará normalmente.
-
-## Ejecución con Sentry
-
-Cuando exista el archivo local, Flutter permite utilizar más de un archivo de
-`dart-define` repitiendo la opción correspondiente.
-
-Ejemplo conceptual:
+PowerShell:
 
 ```powershell
 flutter run -d chrome `
@@ -153,7 +164,65 @@ flutter run -d chrome `
   --dart-define-from-file=config/monitoreo.local.json
 ```
 
-La configuración real de Sentry se creará en la siguiente etapa.
+Después del arranque debe aparecer en consola una línea similar a:
+
+```text
+Sentry: evento de verificación enviado. Event ID: ...
+```
+
+El identificador real será distinto en cada evento.
+
+En Sentry, buscar el mensaje:
+
+```text
+Destino+ - evento controlado de verificación de monitoreo
+```
+
+y comprobar que el entorno sea:
+
+```text
+development
+```
+
+## Después de verificar
+
+Para evitar enviar un evento en cada arranque de desarrollo, cambiar el archivo
+local a:
+
+```json
+{
+  "SENTRY_DSN": "DSN_REAL_DEL_PROYECTO",
+  "SENTRY_ENVIRONMENT": "development",
+  "SENTRY_TEST_EVENT": false
+}
+```
+
+El DSN seguirá habilitando captura global de errores, pero ya no se generará el
+mensaje de prueba.
+
+## Evidencia
+
+Guardar una captura real del dashboard donde sea visible:
+
+- proyecto Destino+;
+- mensaje de verificación;
+- entorno `development`;
+- fecha/hora del evento.
+
+Ruta prevista:
+
+```text
+evidencias/08_monitoreo/01_evento_sentry.png
+```
+
+Opcionalmente puede guardarse otra captura de la consola con el Event ID:
+
+```text
+evidencias/08_monitoreo/02_event_id_consola.png
+```
+
+No incluir en las capturas el contenido de archivos con DSN, tokens o
+credenciales.
 
 ## Pruebas automatizadas
 
@@ -162,28 +231,24 @@ test/configuracion_monitoreo_test.dart
 test/inicializador_monitoreo_test.dart
 ```
 
-Las pruebas verifican que:
+La suite verifica que:
 
-- un DSN vacío mantenga el monitoreo deshabilitado;
-- Destino+ pueda ejecutar su inicialización sin invocar Sentry;
-- un DSN configurado active la plataforma de monitoreo;
-- la aplicación se ejecute una sola vez;
-- el entorno configurado llegue correctamente al adaptador.
+- no haya monitoreo remoto sin DSN;
+- el evento sea opt-in;
+- solo se envíe un evento controlado;
+- production bloquee la verificación;
+- la aplicación siga iniciando una sola vez.
 
-Estas pruebas no envían eventos reales a Internet.
+Las pruebas automatizadas no realizan conexiones reales a Sentry.
 
-## Verificación real pendiente
+## Estado de cierre
 
-La integración no se considerará completamente evidenciada hasta:
+La implementación queda completa cuando:
 
-1. crear un proyecto Flutter real en Sentry;
-2. configurar su DSN local;
-3. enviar un evento controlado desde Destino+;
-4. comprobar su llegada al dashboard;
-5. guardar una captura real en:
+1. `flutter analyze` pasa;
+2. `flutter test` pasa;
+3. el evento controlado llega al proyecto real de Sentry;
+4. se guarda evidencia real;
+5. `SENTRY_TEST_EVENT` vuelve a `false`.
 
-```text
-evidencias/08_monitoreo/
-```
-
-La verificación controlada corresponde al siguiente commit de esta rama.
+La captura real no debe sustituirse por una imagen simulada.

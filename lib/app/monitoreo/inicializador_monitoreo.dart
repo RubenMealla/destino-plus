@@ -1,6 +1,7 @@
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'configuracion_monitoreo.dart';
+import 'verificador_monitoreo.dart';
 
 typedef EjecutorAplicacion = Future<void> Function();
 
@@ -32,7 +33,6 @@ class PlataformaMonitoreoSentry implements PlataformaMonitoreo {
         options.attachViewHierarchy = false;
 
         // En esta primera integración no se activa monitoreo de rendimiento.
-        // Esto evita generar telemetría innecesaria para el alcance académico.
         options.tracesSampleRate = 0;
       },
       appRunner: ejecutarAplicacion,
@@ -41,26 +41,31 @@ class PlataformaMonitoreoSentry implements PlataformaMonitoreo {
 }
 
 /// Decide si Destino+ debe arrancar dentro de Sentry o de forma normal.
-///
-/// La ausencia de DSN es un estado válido: la aplicación debe seguir
-/// funcionando aunque el monitoreo remoto no esté configurado.
 class InicializadorMonitoreo {
   InicializadorMonitoreo({
     required this.configuracion,
     PlataformaMonitoreo? plataforma,
-  }) : _plataforma = plataforma ?? const PlataformaMonitoreoSentry();
+    VerificadorMonitoreo? verificador,
+  })  : _plataforma = plataforma ?? const PlataformaMonitoreoSentry(),
+        _verificador = verificador ?? const VerificadorMonitoreoSentry();
 
   final ConfiguracionMonitoreo configuracion;
   final PlataformaMonitoreo _plataforma;
+  final VerificadorMonitoreo _verificador;
 
-  Future<void> iniciar(EjecutorAplicacion ejecutarAplicacion) {
+  Future<void> iniciar(EjecutorAplicacion ejecutarAplicacion) async {
     if (!configuracion.habilitado) {
-      return ejecutarAplicacion();
+      await ejecutarAplicacion();
+      return;
     }
 
-    return _plataforma.iniciar(
+    await _plataforma.iniciar(
       configuracion: configuracion,
       ejecutarAplicacion: ejecutarAplicacion,
     );
+
+    if (configuracion.permiteEventoPrueba) {
+      await _verificador.enviarEventoPrueba(configuracion);
+    }
   }
 }

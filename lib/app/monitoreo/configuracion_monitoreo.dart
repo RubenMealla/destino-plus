@@ -6,6 +6,7 @@ class ConfiguracionMonitoreo {
   const ConfiguracionMonitoreo({
     required this.dsn,
     required this.entorno,
+    this.eventoPruebaSolicitado = false,
   });
 
   factory ConfiguracionMonitoreo.desdeEntorno() {
@@ -15,11 +16,16 @@ class ConfiguracionMonitoreo {
         'SENTRY_ENVIRONMENT',
         defaultValue: 'development',
       ),
+      eventoPruebaSolicitado: bool.fromEnvironment(
+        'SENTRY_TEST_EVENT',
+        defaultValue: false,
+      ),
     );
   }
 
   final String dsn;
   final String entorno;
+  final bool eventoPruebaSolicitado;
 
   /// El monitoreo remoto solo se activa cuando existe un DSN configurado.
   bool get habilitado => dsn.trim().isNotEmpty;
@@ -29,4 +35,15 @@ class ConfiguracionMonitoreo {
     final valor = entorno.trim();
     return valor.isEmpty ? 'development' : valor;
   }
+
+  /// El evento de verificación está bloqueado en producción.
+  ///
+  /// Deben cumplirse simultáneamente:
+  /// - existir un DSN;
+  /// - haberse solicitado explícitamente mediante `SENTRY_TEST_EVENT=true`;
+  /// - utilizar un entorno distinto de `production`.
+  bool get permiteEventoPrueba =>
+      habilitado &&
+      eventoPruebaSolicitado &&
+      entornoNormalizado.toLowerCase() != 'production';
 }

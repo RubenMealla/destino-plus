@@ -14,7 +14,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Destino+'), findsOneWidget);
+    expect(find.text('Destino+', findRichText: true), findsOneWidget);
     expect(
       find.text('Organiza tu destino. Disfruta el camino.'),
       findsOneWidget,

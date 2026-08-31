@@ -54,7 +54,7 @@ abstract final class RouterApp {
       routes: [
         GoRoute(
           path: RutasApp.raiz,
-          redirect: (_, __) => EstadoSesion.instancia.autenticado
+          redirect: (_, _) => EstadoSesion.instancia.autenticado
               ? RutasApp.inicio
               : RutasApp.inicioSesion,
         ),

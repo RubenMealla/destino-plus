@@ -54,14 +54,6 @@ class _AlmacenPreferenciasFalso implements AlmacenPreferencias {
   }
 }
 
-class _ClimaTextoFalso implements FuenteClimaDestino {
-  const _ClimaTextoFalso(this.resultado);
-
-  final ClimaDestino resultado;
-
-  @override
-  Future<ClimaDestino> consultar(String destino) async => resultado;
-}
 
 class _ClimaUbicacionFalso implements FuenteClimaUbicacionActual {
   const _ClimaUbicacionFalso(this.resultado);

@@ -155,7 +155,7 @@ class _PantallaViajesState extends State<PantallaViajes> {
                         bottom: DimensionesApp.espacio32 + 72,
                       ),
                       itemCount: viajes.length,
-                      separatorBuilder: (_, __) => const SizedBox(
+                      separatorBuilder: (_, _) => const SizedBox(
                         height: DimensionesApp.espacio12,
                       ),
                       itemBuilder: (context, index) {

@@ -108,7 +108,7 @@ void main() {
     });
 
     test('elige la opción que mejor coincide con país y ciudad', () async {
-      final tarijaEspaña = _ubicacion(
+      final tarijaEspana = _ubicacion(
         id: 1,
         nombre: 'Tarija',
         latitud: 40,
@@ -126,7 +126,7 @@ void main() {
 
       final fuente = _FuenteClimaFalsa(
         respuestasBusqueda: {
-          'Tarija, Bolivia': [tarijaEspaña, tarijaBolivia],
+          'Tarija, Bolivia': [tarijaEspana, tarijaBolivia],
         },
         pronostico: _pronostico(),
       );

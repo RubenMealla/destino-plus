@@ -30,6 +30,7 @@ class PlataformaMonitoreoSentry implements PlataformaMonitoreo {
         // Destino+ utiliza Sentry únicamente para diagnóstico técnico.
         options.sendDefaultPii = false;
         options.attachScreenshot = false;
+        // ignore: experimental_member_use
         options.attachViewHierarchy = false;
 
         // En esta primera integración no se activa monitoreo de rendimiento.

@@ -1,0 +1,5 @@
+{
+  "SENTRY_DSN": "https://TU_DSN_PUBLICO_DE_SENTRY",
+  "SENTRY_ENVIRONMENT": "development",
+  "SENTRY_TEST_EVENT": false
+}

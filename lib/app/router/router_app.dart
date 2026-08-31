@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/actividades/pantalla_formulario_actividad.dart';
 import '../../features/auth/estado/estado_sesion.dart';
 import '../../features/auth/pantalla_inicio_sesion.dart';
 import '../../features/auth/pantalla_registro.dart';
@@ -8,6 +9,7 @@ import '../../features/explorar/pantalla_explorar.dart';
 import '../../features/inicio/pantalla_inicio.dart';
 import '../../features/perfil/pantalla_perfil.dart';
 import '../../features/presentacion/pantalla_presentacion.dart';
+import '../../features/viajes/modelos/viaje.dart';
 import '../../features/viajes/pantalla_detalle_viaje.dart';
 import '../../features/viajes/pantalla_formulario_viaje.dart';
 import '../../features/viajes/pantalla_viajes.dart';
@@ -29,7 +31,9 @@ abstract final class RouterApp {
       initialLocation: ubicacionInicial,
       refreshListenable: protegerRutas ? estado : null,
       redirect: (context, state) {
-        if (!protegerRutas) return null;
+        if (!protegerRutas) {
+          return null;
+        }
 
         final ubicacion = state.matchedLocation;
         final esRutaAcceso = ubicacion == RutasApp.inicioSesion ||
@@ -107,6 +111,39 @@ abstract final class RouterApp {
 
                             return PantallaFormularioViaje(
                               viajeId: id,
+                            );
+                          },
+                        ),
+                        GoRoute(
+                          path: 'actividades/nueva',
+                          builder: (context, state) {
+                            final viajeId =
+                                state.pathParameters['id'] ?? '';
+                            final extra = state.extra;
+                            final viaje =
+                                extra is Viaje ? extra : null;
+
+                            return PantallaFormularioActividad(
+                              viajeId: viajeId,
+                              viaje: viaje,
+                            );
+                          },
+                        ),
+                        GoRoute(
+                          path: 'actividades/:actividadId/editar',
+                          builder: (context, state) {
+                            final viajeId =
+                                state.pathParameters['id'] ?? '';
+                            final actividadId =
+                                state.pathParameters['actividadId'] ?? '';
+                            final extra = state.extra;
+                            final viaje =
+                                extra is Viaje ? extra : null;
+
+                            return PantallaFormularioActividad(
+                              viajeId: viajeId,
+                              viaje: viaje,
+                              actividadId: actividadId,
                             );
                           },
                         ),

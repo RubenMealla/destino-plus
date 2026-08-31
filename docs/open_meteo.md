@@ -13,7 +13,7 @@ Endpoint:
 https://geocoding-api.open-meteo.com/v1/search
 ```
 
-Destino+ envía inicialmente:
+Destino+ envía:
 
 ```text
 name
@@ -22,15 +22,8 @@ language=es
 format=json
 ```
 
-El resultado se transforma a `UbicacionClima`, que conserva:
-
-- nombre;
-- latitud;
-- longitud;
-- país;
-- código de país;
-- región;
-- zona horaria.
+El resultado se transforma a `UbicacionClima`, que conserva nombre,
+coordenadas, país, región y zona horaria.
 
 ### Pronóstico
 
@@ -40,7 +33,7 @@ Endpoint:
 https://api.open-meteo.com/v1/forecast
 ```
 
-El cliente solicita:
+El cliente solicita condiciones actuales y siete días de pronóstico:
 
 ```text
 current:
@@ -63,9 +56,7 @@ forecast_days=7
 
 ## Consulta por destino
 
-`ServicioClimaDestino` conecta ambos endpoints.
-
-Ejemplo conceptual:
+`ServicioClimaDestino` conecta geocodificación y pronóstico.
 
 ```text
 "Tarija, Bolivia"
@@ -83,52 +74,72 @@ obtenerPronostico()
 ClimaDestino
 ```
 
-El servicio normaliza el texto, busca hasta ocho opciones y selecciona la que
-mejor coincide con las palabras del destino guardado.
+El servicio intenta seleccionar la ubicación que mejor coincide con ciudad,
+región y país. Si la consulta completa no devuelve resultados y contiene una
+coma, intenta nuevamente con la primera parte.
 
-Si una consulta como:
+## Integración en la interfaz
+
+La pestaña `Explorar` ya consume `FuenteClimaDestino`.
+
+El usuario puede escribir un destino, por ejemplo:
 
 ```text
 Tarija, Bolivia
 ```
 
-no devuelve resultados, se intenta una segunda búsqueda con:
+La pantalla contempla cuatro estados funcionales:
 
 ```text
-Tarija
+inicial
+cargando
+error / sin ubicación
+respuesta correcta
 ```
 
-Esto permite trabajar mejor con destinos escritos de distintas formas por el
-usuario.
+La respuesta correcta presenta:
 
-Si no existe ninguna ubicación compatible, se genera `ExcepcionClima` con un
-mensaje que la interfaz podrá mostrar sin inventar datos meteorológicos.
+- ubicación encontrada;
+- temperatura actual;
+- sensación térmica;
+- humedad relativa;
+- velocidad del viento;
+- descripción de las condiciones;
+- máximas y mínimas diarias;
+- probabilidad de precipitación;
+- siete días de pronóstico cuando están disponibles;
+- zona horaria devuelta por Open-Meteo.
+
+Los códigos meteorológicos se traducen a textos e iconos desde
+`ClimaVisual`.
 
 ## Arquitectura
 
 ```text
-Pantalla / estado de interfaz
+PantallaExplorar
         |
-        +-- ServicioClimaDestino
+        +-- FuenteClimaDestino
                 |
-                +-- FuenteClimaRemota
+                +-- ServicioClimaDestino
                         |
-                        +-- ClienteOpenMeteo
+                        +-- FuenteClimaRemota
                                 |
-                                +-- Geocodificación
-                                +-- Pronóstico
+                                +-- ClienteOpenMeteo
+                                        |
+                                        +-- Geocodificación
+                                        +-- Pronóstico
 ```
 
-La interfaz visual y sus estados de `loading`, error, ausencia de resultados
-y respuesta correcta se incorporarán en el siguiente commit.
+Las interfaces `FuenteClimaDestino` y `FuenteClimaRemota` permiten probar la
+interfaz y la lógica sin depender de Internet.
 
 ## Errores
 
-`ClienteOpenMeteo` convierte problemas de red, respuestas HTTP no exitosas y
-formatos JSON inesperados en `ExcepcionClima`.
+La aplicación no inventa información meteorológica cuando falla una
+consulta.
 
-`ServicioClimaDestino` agrega errores propios de búsqueda, por ejemplo cuando
-no se encuentra una ubicación para el texto escrito.
+Problemas de red, respuestas HTTP no exitosas, JSON inesperado y ubicaciones
+sin resultados se muestran como estados de error con opción de reintento.
 
 ## Credenciales
 

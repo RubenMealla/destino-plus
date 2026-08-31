@@ -15,14 +15,20 @@ class ClimaDestino {
   final PronosticoClima pronostico;
 }
 
+/// Contrato consumido por la interfaz de clima.
+abstract interface class FuenteClimaDestino {
+  Future<ClimaDestino> consultar(String destino);
+}
+
 /// Convierte un destino escrito por el usuario en un pronóstico utilizable.
-class ServicioClimaDestino {
+class ServicioClimaDestino implements FuenteClimaDestino {
   ServicioClimaDestino({
     FuenteClimaRemota? fuente,
   }) : _fuente = fuente ?? ClienteOpenMeteo();
 
   final FuenteClimaRemota _fuente;
 
+  @override
   Future<ClimaDestino> consultar(String destino) async {
     final consulta = destino.trim();
 
@@ -37,9 +43,8 @@ class ServicioClimaDestino {
       limite: 8,
     );
 
-    // Algunos destinos guardados por el usuario pueden incluir país, región
-    // o texto adicional. Si la búsqueda completa no devuelve resultados,
-    // se intenta con la primera parte antes de la coma.
+    // Los destinos guardados pueden incluir país o región. Si la búsqueda
+    // completa no devuelve resultados, se intenta con la primera parte.
     if (ubicaciones.isEmpty && consulta.contains(',')) {
       final ciudad = consulta.split(',').first.trim();
 

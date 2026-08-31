@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../app/preferencias/estado_unidades.dart';
 import '../../app/theme/dimensiones_app.dart';
 import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
@@ -352,6 +354,7 @@ class _ResultadoClima extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actual = resultado.pronostico.actual;
+    final unidad = context.watch<EstadoUnidades>().temperatura;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -374,7 +377,7 @@ class _ResultadoClima extends StatelessWidget {
                 const SizedBox(height: DimensionesApp.espacio12),
               ],
               Text(
-                '${_temperatura(actual.temperatura)} °C',
+                _temperatura(actual.temperatura, unidad),
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: DimensionesApp.espacio4),
@@ -386,8 +389,10 @@ class _ResultadoClima extends StatelessWidget {
               _DatoClima(
                 icono: Icons.thermostat_outlined,
                 etiqueta: 'Sensación',
-                valor:
-                    '${_temperatura(actual.temperaturaAparente)} °C',
+                valor: _temperatura(
+                  actual.temperaturaAparente,
+                  unidad,
+                ),
               ),
               const SizedBox(height: DimensionesApp.espacio8),
               _DatoClima(
@@ -424,7 +429,10 @@ class _ResultadoClima extends StatelessWidget {
               padding: const EdgeInsets.only(
                 bottom: DimensionesApp.espacio12,
               ),
-              child: _TarjetaPronosticoDia(dia: dia),
+              child: _TarjetaPronosticoDia(
+                dia: dia,
+                unidad: unidad,
+              ),
             ),
           ),
         const SizedBox(height: DimensionesApp.espacio8),
@@ -438,8 +446,12 @@ class _ResultadoClima extends StatelessWidget {
     );
   }
 
-  static String _temperatura(double valor) {
-    return valor.round().toString();
+  static String _temperatura(
+    double valorCelsius,
+    UnidadTemperatura unidad,
+  ) {
+    final convertido = unidad.convertirDesdeCelsius(valorCelsius);
+    return '${convertido.round()} ${unidad.simbolo}';
   }
 
   static String _numero(double valor) {
@@ -454,12 +466,19 @@ class _ResultadoClima extends StatelessWidget {
 class _TarjetaPronosticoDia extends StatelessWidget {
   const _TarjetaPronosticoDia({
     required this.dia,
+    required this.unidad,
   });
 
   final PronosticoDiario dia;
+  final UnidadTemperatura unidad;
 
   @override
   Widget build(BuildContext context) {
+    final maxima =
+        unidad.convertirDesdeCelsius(dia.temperaturaMaxima).round();
+    final minima =
+        unidad.convertirDesdeCelsius(dia.temperaturaMinima).round();
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(DimensionesApp.espacio16),
@@ -491,8 +510,7 @@ class _TarjetaPronosticoDia extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${dia.temperaturaMaxima.round()}° / '
-                  '${dia.temperaturaMinima.round()}°',
+                  '$maxima° / $minima° ${unidad.simbolo.substring(1)}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: DimensionesApp.espacio4),

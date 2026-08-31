@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../features/auth/estado/estado_sesion.dart';
 import 'preferencias/estado_apariencia.dart';
+import 'preferencias/estado_unidades.dart';
 import 'router/router_app.dart';
 import 'theme/tema_app.dart';
 
@@ -18,6 +19,9 @@ class DestinoPlusApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<EstadoApariencia>.value(
           value: EstadoApariencia.instancia,
+        ),
+        ChangeNotifierProvider<EstadoUnidades>.value(
+          value: EstadoUnidades.instancia,
         ),
       ],
       child: Consumer<EstadoApariencia>(

@@ -1,4 +1,5 @@
 import 'package:destino_plus/app/preferencias/estado_apariencia.dart';
+import 'package:destino_plus/app/preferencias/estado_unidades.dart';
 import 'package:destino_plus/app/preferencias/servicio_preferencias_locales.dart';
 import 'package:destino_plus/app/theme/tema_app.dart';
 import 'package:destino_plus/features/auth/estado/estado_sesion.dart';
@@ -49,7 +50,10 @@ class _AlmacenPreferenciasFalso implements AlmacenPreferencias {
   }
 }
 
-Widget _appDePrueba(EstadoApariencia apariencia) {
+Widget _appDePrueba(
+  EstadoApariencia apariencia,
+  EstadoUnidades unidades,
+) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<EstadoSesion>.value(
@@ -57,6 +61,9 @@ Widget _appDePrueba(EstadoApariencia apariencia) {
       ),
       ChangeNotifierProvider<EstadoApariencia>.value(
         value: apariencia,
+      ),
+      ChangeNotifierProvider<EstadoUnidades>.value(
+        value: unidades,
       ),
     ],
     child: Consumer<EstadoApariencia>(
@@ -79,9 +86,13 @@ void main() {
     final almacen = _AlmacenPreferenciasFalso();
     final servicio = ServicioPreferenciasLocales(almacen: almacen);
     final apariencia = EstadoApariencia(servicio: servicio);
+    final unidades = EstadoUnidades(servicio: servicio);
     await apariencia.cargar();
+    await unidades.cargar();
 
-    await tester.pumpWidget(_appDePrueba(apariencia));
+    await tester.pumpWidget(
+      _appDePrueba(apariencia, unidades),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Sistema'), findsWidgets);
@@ -102,11 +113,15 @@ void main() {
     final almacen = _AlmacenPreferenciasFalso();
     final servicio = ServicioPreferenciasLocales(almacen: almacen);
     final apariencia = EstadoApariencia(servicio: servicio);
+    final unidades = EstadoUnidades(servicio: servicio);
 
     await apariencia.cargar();
+    await unidades.cargar();
     await apariencia.cambiarModo(ModoApariencia.oscuro);
 
-    await tester.pumpWidget(_appDePrueba(apariencia));
+    await tester.pumpWidget(
+      _appDePrueba(apariencia, unidades),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Sistema'));
@@ -115,5 +130,39 @@ void main() {
     expect(apariencia.modo, ModoApariencia.sistema);
     expect(apariencia.themeMode, ThemeMode.system);
     expect(await servicio.leerModoApariencia(), isNull);
+  });
+
+  testWidgets('Perfil permite seleccionar Fahrenheit y persistirlo', (
+    tester,
+  ) async {
+    final almacen = _AlmacenPreferenciasFalso();
+    final servicio = ServicioPreferenciasLocales(almacen: almacen);
+    final apariencia = EstadoApariencia(servicio: servicio);
+    final unidades = EstadoUnidades(servicio: servicio);
+
+    await apariencia.cargar();
+    await unidades.cargar();
+
+    await tester.pumpWidget(
+      _appDePrueba(apariencia, unidades),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Celsius (°C)'), findsOneWidget);
+    expect(find.text('Fahrenheit (°F)'), findsOneWidget);
+
+    await tester.tap(
+      find.widgetWithText(ChoiceChip, 'Fahrenheit (°F)'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      unidades.temperatura,
+      UnidadTemperatura.fahrenheit,
+    );
+    expect(
+      await servicio.leerUnidadTemperatura(),
+      'fahrenheit',
+    );
   });
 }

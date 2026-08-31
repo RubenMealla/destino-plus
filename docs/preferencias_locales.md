@@ -14,22 +14,29 @@ La persistencia local se implementa con:
 shared_preferences
 ```
 
-La aplicación evita acceder directamente al paquete desde las pantallas. Las
-preferencias pasan por estados y servicios propios de Destino+:
+La aplicación evita acceder directamente al paquete desde las pantallas:
 
 ```text
-EstadoApariencia ───────┐
-                        ├── ServicioPreferenciasLocales
-EstadoUnidades ─────────┘            |
-                                     +-- AlmacenPreferencias
-                                             |
-                                             +-- shared_preferences
+Perfil / Explorar
+       |
+       +-- EstadoApariencia
+       |
+       +-- EstadoUnidades
+               |
+               +-- ServicioPreferenciasLocales
+                       |
+                       +-- AlmacenPreferencias
+                               |
+                               +-- shared_preferences
 ```
 
-Esta separación permite probar la lógica sin almacenamiento real, centralizar
-las claves y mantener la interfaz desacoplada.
+`EstadoApariencia` y `EstadoUnidades` se registran como estado global mediante
+Provider.
 
-## Apariencia persistente
+Ambos se cargan antes de ejecutar `DestinoPlusApp`, por lo que las
+preferencias ya están disponibles cuando aparece la interfaz.
+
+## Apariencia
 
 Clave:
 
@@ -37,16 +44,13 @@ Clave:
 preferencias.modo_apariencia
 ```
 
-Valores:
+Opciones visibles:
 
 ```text
-sistema
-claro
-oscuro
+Sistema
+Claro
+Oscuro
 ```
-
-`EstadoApariencia` traduce la selección a `ThemeMode` y la pantalla Perfil
-permite cambiarla.
 
 ## Unidad de temperatura
 
@@ -56,49 +60,44 @@ Clave:
 preferencias.unidad_temperatura
 ```
 
-Valores admitidos:
+Opciones visibles en Perfil:
 
 ```text
-celsius
-fahrenheit
+Celsius (°C)
+Fahrenheit (°F)
 ```
 
-La unidad predeterminada es `celsius`.
+Celsius es la opción predeterminada.
 
-Cuando el usuario elige Fahrenheit, la selección se persiste. Si vuelve a
-Celsius, la clave se elimina porque Celsius ya es el comportamiento
-predeterminado.
-
-Open-Meteo continúa siendo la fuente de los valores meteorológicos. La
-preferencia solo transforma cómo se presenta la temperatura al usuario:
+Open-Meteo continúa entregando las temperaturas utilizadas internamente por
+la integración actual. Si el usuario elige Fahrenheit, `EstadoUnidades`
+convierte únicamente la presentación:
 
 ```text
 °F = (°C × 9 / 5) + 32
 ```
 
-`EstadoUnidades` concentra esa preferencia y la conversión, evitando colocar
-la fórmula dentro de las pantallas.
+La preferencia se aplica al clima actual, sensación térmica, temperatura
+máxima y temperatura mínima de la pantalla Explorar.
 
-La integración visible con Perfil y con la pantalla de clima se realiza en el
-siguiente commit de `feature/profile-settings`.
+El cambio se refleja en la interfaz y permanece después de cerrar y volver a
+abrir la aplicación.
 
-## Alcance del almacenamiento local
+## Alcance
 
-Sí corresponde a este mecanismo:
+Se almacenan localmente:
 
-- apariencia;
-- unidad de temperatura;
-- futuras preferencias de visualización pequeñas.
+- modo de apariencia;
+- unidad de temperatura.
 
-No se almacenan aquí:
+No se almacenan en `shared_preferences`:
 
 - contraseñas;
 - sesiones manuales;
 - viajes;
 - actividades;
 - coordenadas GPS;
-- claves privadas;
-- secretos de Supabase.
+- secretos o claves privadas.
 
-Viajes y actividades continúan almacenándose en Supabase y protegidos mediante
-RLS.
+Los viajes y actividades continúan en Supabase. La ubicación solo se usa
+temporalmente cuando el usuario solicita su clima.

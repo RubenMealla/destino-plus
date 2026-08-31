@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:destino_plus/app/preferencias/estado_unidades.dart';
+import 'package:destino_plus/app/preferencias/servicio_preferencias_locales.dart';
 import 'package:destino_plus/app/theme/tema_app.dart';
 import 'package:destino_plus/features/clima/modelos/pronostico_clima.dart';
 import 'package:destino_plus/features/clima/modelos/ubicacion_clima.dart';
@@ -11,6 +13,49 @@ import 'package:destino_plus/features/ubicacion/modelos/ubicacion_actual.dart';
 import 'package:destino_plus/features/ubicacion/servicios/acciones_configuracion_ubicacion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+class _AlmacenPreferenciasFalso implements AlmacenPreferencias {
+  final Map<String, Object> datos = {};
+
+  @override
+  Future<String?> leerTexto(String clave) async {
+    final valor = datos[clave];
+    return valor is String ? valor : null;
+  }
+
+  @override
+  Future<bool?> leerBooleano(String clave) async {
+    final valor = datos[clave];
+    return valor is bool ? valor : null;
+  }
+
+  @override
+  Future<int?> leerEntero(String clave) async {
+    final valor = datos[clave];
+    return valor is int ? valor : null;
+  }
+
+  @override
+  Future<void> guardarTexto(String clave, String valor) async {
+    datos[clave] = valor;
+  }
+
+  @override
+  Future<void> guardarBooleano(String clave, bool valor) async {
+    datos[clave] = valor;
+  }
+
+  @override
+  Future<void> guardarEntero(String clave, int valor) async {
+    datos[clave] = valor;
+  }
+
+  @override
+  Future<void> eliminar(String clave) async {
+    datos.remove(clave);
+  }
+}
 
 class _ServicioClimaFalso implements FuenteClimaDestino {
   _ServicioClimaFalso({
@@ -135,22 +180,43 @@ ClimaUbicacionActual _resultadoUbicacionActual() {
   );
 }
 
+Future<EstadoUnidades> _unidades({
+  UnidadTemperatura unidad = UnidadTemperatura.celsius,
+}) async {
+  final estado = EstadoUnidades(
+    servicio: ServicioPreferenciasLocales(
+      almacen: _AlmacenPreferenciasFalso(),
+    ),
+  );
+  await estado.cargar();
+
+  if (unidad != UnidadTemperatura.celsius) {
+    await estado.cambiarTemperatura(unidad);
+  }
+
+  return estado;
+}
+
 Widget _app({
   required FuenteClimaDestino servicio,
+  required EstadoUnidades unidades,
   FuenteClimaUbicacionActual? servicioUbicacion,
   AccionesConfiguracionUbicacion? accionesUbicacion,
 }) {
-  return MaterialApp(
-    theme: TemaApp.claro,
-    home: PantallaExplorar(
-      servicioClima: servicio,
-      servicioClimaUbicacion:
-          servicioUbicacion ??
-          _ServicioUbicacionFalso(
-            resultado: _resultadoUbicacionActual(),
-          ),
-      accionesConfiguracionUbicacion:
-          accionesUbicacion ?? _AccionesUbicacionFalsas(),
+  return ChangeNotifierProvider<EstadoUnidades>.value(
+    value: unidades,
+    child: MaterialApp(
+      theme: TemaApp.claro,
+      home: PantallaExplorar(
+        servicioClima: servicio,
+        servicioClimaUbicacion:
+            servicioUbicacion ??
+            _ServicioUbicacionFalso(
+              resultado: _resultadoUbicacionActual(),
+            ),
+        accionesConfiguracionUbicacion:
+            accionesUbicacion ?? _AccionesUbicacionFalsas(),
+      ),
     ),
   );
 }
@@ -159,7 +225,12 @@ void main() {
   testWidgets('muestra estado inicial antes de consultar', (tester) async {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
-    await tester.pumpWidget(_app(servicio: servicio));
+    await tester.pumpWidget(
+      _app(
+        servicio: servicio,
+        unidades: await _unidades(),
+      ),
+    );
 
     expect(
       find.text('Explora el clima de tu próximo destino'),
@@ -174,7 +245,12 @@ void main() {
       completarManualmente: true,
     );
 
-    await tester.pumpWidget(_app(servicio: servicio));
+    await tester.pumpWidget(
+      _app(
+        servicio: servicio,
+        unidades: await _unidades(),
+      ),
+    );
 
     await tester.enterText(
       find.byType(TextField),
@@ -193,10 +269,17 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('muestra clima actual y pronóstico correcto', (tester) async {
+  testWidgets('muestra clima actual y pronóstico correcto en Celsius', (
+    tester,
+  ) async {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
-    await tester.pumpWidget(_app(servicio: servicio));
+    await tester.pumpWidget(
+      _app(
+        servicio: servicio,
+        unidades: await _unidades(),
+      ),
+    );
 
     await tester.enterText(
       find.byType(TextField),
@@ -213,6 +296,32 @@ void main() {
     expect(find.textContaining('America/La_Paz'), findsOneWidget);
   });
 
+  testWidgets('presenta el clima en Fahrenheit cuando está configurado', (
+    tester,
+  ) async {
+    final servicio = _ServicioClimaFalso(resultado: _resultado());
+
+    await tester.pumpWidget(
+      _app(
+        servicio: servicio,
+        unidades: await _unidades(
+          unidad: UnidadTemperatura.fahrenheit,
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.byType(TextField),
+      'Tarija, Bolivia',
+    );
+    await tester.tap(find.text('Consultar clima'));
+    await tester.pumpAndSettle();
+
+    // 21.2 °C equivale aproximadamente a 70 °F.
+    expect(find.text('70 °F'), findsOneWidget);
+    expect(find.textContaining('77° / 46° F'), findsOneWidget);
+  });
+
   testWidgets('usa ubicación actual y muestra su precisión', (tester) async {
     final climaTexto = _ServicioClimaFalso(resultado: _resultado());
     final ubicacion = _ServicioUbicacionFalso(
@@ -222,6 +331,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         servicio: climaTexto,
+        unidades: await _unidades(),
         servicioUbicacion: ubicacion,
       ),
     );
@@ -247,7 +357,12 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(_app(servicio: servicio));
+    await tester.pumpWidget(
+      _app(
+        servicio: servicio,
+        unidades: await _unidades(),
+      ),
+    );
 
     await tester.enterText(find.byType(TextField), 'Xx');
     await tester.tap(find.text('Consultar clima'));
@@ -275,6 +390,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         servicio: _ServicioClimaFalso(resultado: _resultado()),
+        unidades: await _unidades(),
         servicioUbicacion: ubicacion,
         accionesUbicacion: acciones,
       ),
@@ -313,6 +429,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         servicio: _ServicioClimaFalso(resultado: _resultado()),
+        unidades: await _unidades(),
         servicioUbicacion: ubicacion,
         accionesUbicacion: acciones,
       ),
@@ -348,6 +465,7 @@ void main() {
     await tester.pumpWidget(
       _app(
         servicio: _ServicioClimaFalso(resultado: _resultado()),
+        unidades: await _unidades(),
         servicioUbicacion: ubicacion,
       ),
     );

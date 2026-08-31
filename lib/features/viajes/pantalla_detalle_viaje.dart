@@ -622,12 +622,14 @@ class _TarjetaActividad extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Checkbox(
-              value: actividad.completada,
-              tooltip: actividad.completada
+            Tooltip(
+              message: actividad.completada
                   ? 'Marcar como pendiente'
                   : 'Marcar como completada',
-              onChanged: (_) => onCambiarCompletada(),
+              child: Checkbox(
+                value: actividad.completada,
+                onChanged: (_) => onCambiarCompletada(),
+              ),
             ),
             const SizedBox(width: DimensionesApp.espacio4),
             Expanded(

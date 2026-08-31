@@ -1,273 +1,578 @@
 # Destino+
 
-Aplicación móvil para la planificación y organización de viajes personales.
+**Destino+** es una aplicación desarrollada con Flutter para planificar y
+organizar viajes personales desde un solo lugar.
+
+> **Organiza tu destino. Disfruta el camino.**
+
+El proyecto integra autenticación, planificación de viajes, actividades,
+consulta meteorológica, geolocalización, preferencias locales y monitoreo de
+errores.
 
 ## Estado del proyecto
 
-🚧 Proyecto en desarrollo.
+La funcionalidad principal de Destino+ se encuentra implementada y cuenta con
+pruebas automatizadas.
 
-**Versión actual:** `0.1.0+1`
+La fase Android Release todavía debe completarse antes de la entrega final:
 
-Destino+ se encuentra actualmente en su etapa inicial de configuración. Las funcionalidades descritas como alcance previsto se irán incorporando progresivamente y solo se considerarán implementadas cuando hayan sido desarrolladas y probadas.
+- validación real en Android;
+- prueba de permisos de ubicación en Android;
+- APK Release;
+- instalación del APK fuera del IDE;
+- configuración de firma;
+- AAB firmado;
+- evidencias finales de release.
 
-## Descripción
+La documentación de pruebas y evidencias se encuentra en:
 
-Destino+ es una aplicación desarrollada con Flutter y Dart orientada a centralizar la planificación de viajes personales.
+```text
+docs/pruebas/
+```
 
-La aplicación busca permitir que una persona organice en un solo lugar sus destinos, fechas, actividades e información útil relacionada con cada viaje.
+## Funcionalidades principales
 
-## Problema que busca resolver
+### Autenticación
 
-Durante la planificación de un viaje, la información suele quedar distribuida entre notas, calendarios, aplicaciones de clima y otros medios.
+- registro de usuarios;
+- inicio de sesión;
+- sesión persistente mediante Supabase;
+- rutas protegidas;
+- cierre de sesión;
+- validaciones de formularios.
 
-Destino+ busca reducir esa dispersión mediante una aplicación sencilla que permita organizar la información principal de cada viaje y consultar datos útiles relacionados con el destino.
+### Viajes
 
-## Objetivo general
+- crear viajes;
+- listar viajes;
+- consultar detalle;
+- editar viajes;
+- eliminar viajes;
+- título, destino, fechas y descripción;
+- validación de rangos de fechas.
 
-Desarrollar una aplicación móvil que permita planificar y organizar viajes personales mediante una interfaz clara, navegación coherente, almacenamiento de información y acceso a servicios externos relacionados con el viaje.
+Los viajes pertenecen al usuario autenticado.
 
-## Alcance previsto
+### Actividades e itinerario
 
-Durante el desarrollo se plantea incorporar progresivamente:
+Cada viaje puede contener actividades con:
 
-- autenticación de usuarios;
-- navegación entre múltiples pantallas;
-- panel principal o inicio;
-- gestión de viajes;
-- creación, consulta, modificación y eliminación de viajes;
-- registro de actividades asociadas a un viaje;
-- consumo de una API pública relacionada con el clima;
-- geolocalización;
-- persistencia de información;
-- preferencias locales;
-- manejo de estados de carga, éxito y error;
-- validaciones de formularios;
-- diseño adaptable a diferentes tamaños de pantalla;
-- pruebas y evidencias del funcionamiento.
+- título;
+- fecha;
+- hora opcional;
+- lugar opcional;
+- notas opcionales;
+- estado pendiente/completado.
 
-> **Nota:** esta lista representa el alcance previsto. Una funcionalidad se documentará como implementada únicamente después de desarrollarla y probarla.
+Las actividades:
 
-## Pantallas previstas
+- pueden crearse;
+- editarse;
+- eliminarse;
+- marcarse como completadas;
+- se agrupan cronológicamente por día;
+- deben estar dentro del rango de fechas del viaje.
 
-La aplicación contará como mínimo con las siguientes pantallas principales:
+### Clima
 
-1. Inicio de sesión y registro.
-2. Inicio o panel principal.
-3. Lista de viajes.
-4. Detalle de un viaje.
-5. Creación y edición de viajes.
-6. Perfil y ajustes.
+Destino+ consume **Open-Meteo** para mostrar:
 
-Durante el desarrollo podrán incorporarse pantallas adicionales si son necesarias para mantener una navegación clara.
+- temperatura actual;
+- sensación térmica;
+- humedad;
+- velocidad del viento;
+- condición meteorológica;
+- pronóstico de hasta 7 días;
+- temperaturas máximas y mínimas;
+- probabilidad de precipitación.
 
-## Tecnologías iniciales
+La búsqueda puede realizarse escribiendo un destino.
 
-Actualmente el proyecto utiliza:
+### Geolocalización
 
-- Flutter `3.47.2`;
-- Dart `3.13.2`;
+El usuario puede pulsar:
+
+```text
+Usar mi ubicación
+```
+
+para:
+
+1. solicitar la ubicación actual;
+2. obtener latitud y longitud;
+3. consultar Open-Meteo con esas coordenadas;
+4. mostrar el clima correspondiente.
+
+La aplicación maneja estados como:
+
+- permiso denegado;
+- permiso bloqueado permanentemente;
+- servicio de ubicación desactivado;
+- tiempo de espera agotado;
+- ubicación no disponible.
+
+Destino+ no solicita ubicación en segundo plano.
+
+### Preferencias locales
+
+Mediante `shared_preferences` se conservan:
+
+- apariencia;
+- unidad de temperatura.
+
+Apariencia disponible:
+
+```text
+Sistema
+Claro
+Oscuro
+```
+
+Unidad de temperatura:
+
+```text
+Celsius (°C)
+Fahrenheit (°F)
+```
+
+Los viajes y actividades no se almacenan en preferencias locales: su fuente
+de verdad es Supabase.
+
+### Monitoreo
+
+Destino+ integra **Sentry** para monitoreo de errores.
+
+Características de la configuración actual:
+
+- activación mediante `SENTRY_DSN`;
+- separación de entornos;
+- funcionamiento normal cuando Sentry no está configurado;
+- captura global mediante `sentry_flutter`;
+- `sendDefaultPii = false`;
+- capturas de pantalla deshabilitadas;
+- jerarquía visual deshabilitada;
+- monitoreo de rendimiento deshabilitado para el alcance actual;
+- evento controlado de verificación disponible solo fuera de `production`.
+
+La integración real fue validada enviando un evento desde Destino+ a un
+proyecto Sentry.
+
+Detalles:
+
+```text
+docs/monitoreo.md
+```
+
+## Tecnologías
+
+| Área | Tecnología |
+| --- | --- |
+| Aplicación | Flutter / Dart |
+| UI | Material 3 |
+| Navegación | GoRouter |
+| Estado global | Provider |
+| Backend | Supabase |
+| Autenticación | Supabase Auth |
+| Base de datos | PostgreSQL / Supabase |
+| Persistencia local | SharedPreferences |
+| API pública | Open-Meteo |
+| HTTP | paquete `http` |
+| Geolocalización | Geolocator |
+| Monitoreo | Sentry |
+| Control de versiones | Git / GitHub |
+
+## Arquitectura general
+
+El proyecto utiliza una estructura orientada por funcionalidades.
+
+```text
+lib/
+├── app/
+│   ├── config/
+│   ├── monitoreo/
+│   ├── preferencias/
+│   ├── router/
+│   └── theme/
+├── features/
+│   ├── actividades/
+│   ├── auth/
+│   ├── clima/
+│   ├── explorar/
+│   ├── inicio/
+│   ├── perfil/
+│   ├── ubicacion/
+│   └── viajes/
+└── shared/
+    └── widgets/
+```
+
+Además:
+
+```text
+test/                 pruebas automatizadas
+docs/                 documentación técnica
+supabase/migrations/  migraciones de base de datos
+evidencias/           evidencias reales de validación
+config/               ejemplos y configuración local ignorada por Git
+android/              proyecto Android generado por Flutter
+```
+
+La interfaz depende de contratos y servicios propios cuando es conveniente,
+lo que permite sustituir implementaciones reales por fakes durante las
+pruebas.
+
+## Requisitos de desarrollo
+
+Para trabajar con el proyecto se necesita:
+
 - Git;
-- GitHub;
-- Flutter Web para la etapa inicial de desarrollo.
+- Flutter compatible con el proyecto;
+- Dart incluido con Flutter;
+- Chrome para pruebas web durante desarrollo;
+- Android SDK y un dispositivo/emulador para la validación Android final.
 
-Tecnologías adicionales, como Provider, GoRouter, Supabase, SharedPreferences, geolocalización y una API pública de clima, se incorporarán únicamente cuando corresponda a cada etapa del proyecto.
+Comprobar el entorno:
 
-## Requisitos actuales
+```powershell
+flutter --version
+flutter doctor -v
+git --version
+```
 
-Para trabajar con el proyecto en su estado actual se necesita:
+## Clonar el repositorio
 
-- Flutter SDK compatible con Dart `3.13.2`;
-- Dart SDK;
-- Git;
-- Google Chrome para la ejecución inicial en Flutter Web;
-- conexión a Internet para recuperar dependencias.
-
-La configuración de Android se realizará posteriormente, antes de generar y probar la versión Release, APK y AAB.
-
-## Descargar el proyecto
-
-Clonar el repositorio:
-
-```bash
+```powershell
 git clone https://github.com/RubenMealla/destino-plus.git
-```
-
-Entrar al proyecto:
-
-```bash
-cd destino_plus
-```
-
-## Recuperar dependencias
-
-```bash
+cd destino-plus
 flutter pub get
 ```
 
-## Verificar el entorno
+## Configuración de Supabase
 
-```bash
-flutter --version
-dart --version
-flutter doctor -v
-flutter devices
-```
+Destino+ no almacena la configuración local real de Supabase en Git.
 
-## Ejecución inicial en Web
-
-Durante la primera etapa del desarrollo se utilizará Google Chrome:
-
-```bash
-flutter run -d chrome
-```
-
-## Estructura inicial del proyecto
+Existe una configuración local esperada:
 
 ```text
-destino_plus/
-├── android/
-├── lib/
-│   └── main.dart
-├── test/
-│   └── widget_test.dart
-├── web/
-├── .gitignore
-├── analysis_options.yaml
-├── pubspec.lock
-├── pubspec.yaml
-└── README.md
+config/supabase.local.json
 ```
 
-La estructura de `lib/` se reorganizará progresivamente a medida que se incorporen pantallas, modelos, servicios, estado global y componentes reutilizables.
-
-## Versionado del proyecto
-
-La versión actual se encuentra definida en `pubspec.yaml`:
-
-```yaml
-version: 0.1.0+1
-```
-
-Interpretación:
-
-- `0.1.0`: versión visible actual del proyecto;
-- `+1`: número interno de compilación.
-
-El versionado se actualizará conforme avance el desarrollo y se preparen nuevas entregas.
-
-## Control de versiones con Git
-
-El proyecto utiliza Git para registrar de forma progresiva su evolución y GitHub como repositorio remoto.
-
-**Rama principal:**
+La regla:
 
 ```text
-main
+config/*.local.json
 ```
 
-Las funcionalidades y cambios importantes se desarrollarán en ramas específicas antes de integrarse en `main`.
+impide que los archivos locales se versionen.
 
-Ejemplos:
+El archivo debe proporcionar las variables requeridas por la configuración de
+Supabase del proyecto.
+
+No deben incorporarse al repositorio:
+
+- contraseñas;
+- `service_role`;
+- claves privadas;
+- tokens administrativos.
+
+## Configuración de Sentry
+
+Ejemplo versionado:
 
 ```text
-feature/project-setup
-feature/ui-foundation
-feature/navigation
-feature/auth
-feature/trips-crud
-feature/weather-api
-feature/location
+config/monitoreo.example.json
 ```
 
-Las ramas fusionadas podrán conservarse como evidencia del proceso de desarrollo.
-
-## Convención de commits
-
-Se utilizarán prefijos habituales en proyectos de software:
-
-- `feat:` nueva funcionalidad;
-- `fix:` corrección de un error;
-- `docs:` documentación;
-- `test:` pruebas;
-- `refactor:` reorganización de código sin cambiar su comportamiento;
-- `chore:` tareas técnicas o de configuración;
-- `style:` cambios de formato que no modifican la lógica.
-
-Ejemplo:
+Para una configuración local crear:
 
 ```text
-feat: agrega navegación principal
+config/monitoreo.local.json
 ```
 
-## Seguridad
+con una estructura equivalente a:
 
-El repositorio está configurado para evitar publicar archivos sensibles o locales, entre ellos:
+```json
+{
+  "SENTRY_DSN": "DSN_DEL_PROYECTO",
+  "SENTRY_ENVIRONMENT": "development",
+  "SENTRY_TEST_EVENT": false
+}
+```
+
+El DSN real no se versiona en este repositorio.
+
+El evento controlado:
 
 ```text
-.env
-.env.*
-config/live.json
-android/key.properties
-*.jks
-*.keystore
+SENTRY_TEST_EVENT=true
 ```
 
-No deben publicarse contraseñas, tokens privados, claves de firma, credenciales reales ni archivos de configuración que contengan secretos.
+se utiliza únicamente para verificar la integración en un entorno distinto de
+`production`.
+
+## Ejecutar durante desarrollo
+
+### Sin Sentry
+
+```powershell
+flutter run -d chrome --dart-define-from-file=config/supabase.local.json
+```
+
+### Con Sentry
+
+```powershell
+flutter run -d chrome `
+  --dart-define-from-file=config/supabase.local.json `
+  --dart-define-from-file=config/monitoreo.local.json
+```
+
+La ausencia de un DSN de Sentry no debe impedir que Destino+ se ejecute.
+
+## Base de datos
+
+La persistencia principal utiliza Supabase.
+
+Las migraciones se encuentran en:
+
+```text
+supabase/migrations/
+```
+
+Entidades principales:
+
+```text
+viajes
+actividades_viaje
+```
+
+Se utilizan políticas **Row Level Security (RLS)** para restringir el acceso a
+los datos del usuario correspondiente.
+
+También existe validación de fechas de actividades para reforzar en la base de
+datos que una actividad pertenezca al intervalo de su viaje.
+
+## API Open-Meteo
+
+Destino+ utiliza servicios de Open-Meteo para:
+
+```text
+geocodificación de destinos
+pronóstico meteorológico
+```
+
+No se necesita almacenar una API key privada para esta integración.
+
+La documentación específica se encuentra en:
+
+```text
+docs/open_meteo.md
+```
+
+## Permisos Android
+
+El manifest principal utiliza los permisos necesarios para las funciones
+actuales:
+
+```text
+android.permission.INTERNET
+android.permission.ACCESS_COARSE_LOCATION
+android.permission.ACCESS_FINE_LOCATION
+```
+
+No se utiliza:
+
+```text
+android.permission.ACCESS_BACKGROUND_LOCATION
+```
+
+La prueba definitiva de estos permisos debe realizarse en Android durante la
+fase de release.
 
 ## Pruebas
 
-En esta etapa inicial todavía no se ha definido la batería completa de pruebas del proyecto.
+Ejecutar análisis estático:
 
-A medida que se incorporen funcionalidades se documentarán:
-
-- análisis estático con `flutter analyze`;
-- pruebas automatizadas con `flutter test`;
-- pruebas funcionales;
-- pruebas negativas;
-- evidencias de ejecución;
-- matriz de pruebas.
-
-## Plataforma Android y entrega final
-
-La aplicación será desarrollada inicialmente en Flutter Web para facilitar la construcción de la interfaz y la navegación.
-
-Antes de la entrega final se configurará y verificará Android para:
-
-- ejecutar la aplicación en modo Release;
-- instalar y probar la aplicación fuera del entorno de desarrollo;
-- configurar la firma;
-- generar el APK Release;
-- generar el AAB;
-- comprobar versión y build;
-- organizar las evidencias de entrega.
-
-## Limitaciones actuales
-
-En la versión `0.1.0+1`:
-
-- todavía no se ha implementado la interfaz definitiva;
-- todavía no existe autenticación;
-- todavía no existe el CRUD de viajes;
-- todavía no se ha integrado una API pública;
-- todavía no se ha implementado geolocalización;
-- todavía no se ha configurado persistencia;
-- todavía no se ha configurado Android SDK en el entorno de desarrollo;
-- todavía no se ha generado APK ni AAB.
-
-Estas limitaciones corresponden al estado inicial del proyecto y se irán resolviendo de manera progresiva.
-
-## Repositorio
-
-GitHub:
-
-```text
-https://github.com/RubenMealla/destino-plus
+```powershell
+flutter analyze
 ```
 
-## Autor
+Ejecutar la suite automatizada:
 
-**Ruben Mealla**
+```powershell
+flutter test
+```
 
-Diplomado en Desarrollo Web y Aplicaciones Móviles  
-Módulo 3 - Desarrollo de Aplicaciones Móviles  
-Gestión 2026
+La suite cubre áreas como:
+
+- autenticación;
+- navegación;
+- viajes;
+- actividades;
+- itinerario;
+- validaciones;
+- preferencias locales;
+- apariencia;
+- unidades;
+- Open-Meteo;
+- geolocalización;
+- integración ubicación + clima;
+- estados de error;
+- monitoreo.
+
+No se fija en este README una cantidad concreta de tests porque puede cambiar
+durante el desarrollo. La cifra válida es la informada por la ejecución final
+real de `flutter test`.
+
+## Documentación de pruebas
+
+Matriz funcional:
+
+```text
+docs/pruebas/matriz_pruebas_funcionales.md
+```
+
+Plan de evidencias:
+
+```text
+docs/pruebas/plan_evidencias.md
+```
+
+Trazabilidad:
+
+```text
+docs/pruebas/trazabilidad_requisitos.md
+```
+
+La documentación sigue el esquema:
+
+```text
+requisito
+   ↓
+implementación
+   ↓
+prueba
+   ↓
+evidencia
+   ↓
+conclusión
+```
+
+No deben marcarse como aprobadas pruebas que no hayan sido ejecutadas.
+
+## Git y flujo de trabajo
+
+El desarrollo utiliza:
+
+```text
+main
+feature/*
+fix/*
+test/*
+docs/*
+```
+
+Las funcionalidades se trabajan en ramas específicas y se integran a `main`
+mediante Pull Requests.
+
+Las ramas fusionadas pueden conservarse como parte del historial académico del
+proyecto.
+
+Comandos útiles:
+
+```powershell
+git status
+git --no-pager diff --check
+git --no-pager log --oneline --decorate --graph --all
+```
+
+Antes de commits importantes se recomienda revisar únicamente los archivos
+que realmente se desean versionar.
+
+## Evidencias
+
+Las evidencias reales se organizan bajo:
+
+```text
+evidencias/
+```
+
+Plan:
+
+```text
+01_entorno/
+02_autenticacion/
+03_navegacion/
+04_viajes_actividades/
+05_integraciones/
+06_pruebas/
+07_release_android/
+08_monitoreo/
+```
+
+No deben incorporarse secretos ni evidencias fabricadas.
+
+## Release Android pendiente
+
+La fase final incluirá, una vez configurado correctamente el entorno Android:
+
+```powershell
+flutter clean
+flutter pub get
+flutter analyze
+flutter test
+flutter run --release
+flutter build apk --release
+flutter build appbundle
+```
+
+También deberá comprobarse:
+
+- ejecución en Android;
+- permisos reales de ubicación;
+- instalación del APK Release fuera del IDE;
+- firma del bundle;
+- generación del AAB;
+- hashes de los artefactos finales;
+- evidencias correspondientes.
+
+Hasta realizar esas acciones no deben declararse como completadas.
+
+## Seguridad y privacidad
+
+Principios aplicados:
+
+- RLS en datos de usuario;
+- configuración local excluida de Git;
+- ausencia de `service_role` en el cliente;
+- ubicación utilizada solo cuando el usuario la solicita;
+- sin seguimiento de ubicación en segundo plano;
+- Sentry sin PII predeterminada;
+- sin capturas automáticas en Sentry;
+- sin tokens administrativos dentro de Flutter.
+
+## Propósito académico
+
+Destino+ fue desarrollado como proyecto individual para demostrar la
+integración práctica de conceptos de desarrollo móvil con Flutter:
+
+- interfaz;
+- navegación;
+- autenticación;
+- CRUD;
+- base de datos;
+- API externa;
+- persistencia local;
+- estado global;
+- capacidad nativa;
+- manejo de errores;
+- pruebas;
+- Git;
+- documentación;
+- monitoreo;
+- preparación para distribución Android.
+
+## Licencia
+
+Este repositorio corresponde a un proyecto académico. La incorporación de una
+licencia de distribución específica puede definirse según el uso futuro del
+proyecto.

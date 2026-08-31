@@ -11,6 +11,7 @@ import '../clima/servicios/cliente_open_meteo.dart';
 import '../clima/servicios/servicio_clima_destino.dart';
 import '../clima/servicios/servicio_clima_ubicacion_actual.dart';
 import '../ubicacion/modelos/ubicacion_actual.dart';
+import '../ubicacion/servicios/acciones_configuracion_ubicacion.dart';
 
 /// Consulta clima real por destino escrito o por la ubicación actual.
 class PantallaExplorar extends StatefulWidget {
@@ -18,10 +19,13 @@ class PantallaExplorar extends StatefulWidget {
     super.key,
     this.servicioClima,
     this.servicioClimaUbicacion,
+    this.accionesConfiguracionUbicacion,
   });
 
   final FuenteClimaDestino? servicioClima;
   final FuenteClimaUbicacionActual? servicioClimaUbicacion;
+  final AccionesConfiguracionUbicacion?
+      accionesConfiguracionUbicacion;
 
   @override
   State<PantallaExplorar> createState() => _PantallaExplorarState();
@@ -32,6 +36,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
 
   ClimaDestino? _resultado;
   String? _error;
+  TipoErrorUbicacion? _tipoErrorUbicacion;
   double? _precisionUbicacionMetros;
   bool _cargando = false;
   bool _consultaRealizada = false;
@@ -42,6 +47,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
 
   FuenteClimaUbicacionActual get _servicioUbicacion =>
       widget.servicioClimaUbicacion ?? ServicioClimaUbicacionActual();
+
+  AccionesConfiguracionUbicacion get _accionesUbicacion =>
+      widget.accionesConfiguracionUbicacion ??
+      const AccionesConfiguracionUbicacionGeolocator();
 
   @override
   void dispose() {
@@ -59,6 +68,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         _consultaRealizada = true;
         _resultado = null;
         _precisionUbicacionMetros = null;
+        _tipoErrorUbicacion = null;
         _error = 'Escribe un destino para consultar el clima.';
       });
       return;
@@ -108,7 +118,10 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
             resultado.ubicacion.precisionMetros;
       });
     } on ExcepcionUbicacion catch (error) {
-      _mostrarError(error.mensaje);
+      _mostrarError(
+        error.mensaje,
+        tipoUbicacion: error.tipo,
+      );
     } on ExcepcionClima catch (error) {
       _mostrarError(error.mensaje);
     } catch (_) {
@@ -127,17 +140,22 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       _resultado = null;
       _precisionUbicacionMetros = null;
       _error = null;
+      _tipoErrorUbicacion = null;
       _mensajeCarga = mensaje;
     });
   }
 
-  void _mostrarError(String mensaje) {
+  void _mostrarError(
+    String mensaje, {
+    TipoErrorUbicacion? tipoUbicacion,
+  }) {
     if (!mounted) {
       return;
     }
 
     setState(() {
       _error = mensaje;
+      _tipoErrorUbicacion = tipoUbicacion;
     });
   }
 
@@ -149,6 +167,66 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     setState(() {
       _cargando = false;
     });
+  }
+
+  Future<void> _abrirConfiguracionAplicacion() async {
+    final abierto =
+        await _accionesUbicacion.abrirConfiguracionAplicacion();
+
+    if (!abierto && mounted) {
+      _mostrarAvisoConfiguracion();
+    }
+  }
+
+  Future<void> _abrirConfiguracionUbicacion() async {
+    final abierto =
+        await _accionesUbicacion.abrirConfiguracionUbicacion();
+
+    if (!abierto && mounted) {
+      _mostrarAvisoConfiguracion();
+    }
+  }
+
+  void _mostrarAvisoConfiguracion() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'No fue posible abrir la configuración automáticamente.',
+        ),
+      ),
+    );
+  }
+
+  Widget _accionParaError() {
+    return switch (_tipoErrorUbicacion) {
+      TipoErrorUbicacion.servicioDeshabilitado => BotonAccion(
+          texto: 'Abrir configuración de ubicación',
+          icono: Icons.location_off_outlined,
+          onPressed: _abrirConfiguracionUbicacion,
+        ),
+      TipoErrorUbicacion.permisoDenegadoPermanentemente => BotonAccion(
+          texto: 'Abrir configuración de la app',
+          icono: Icons.settings_outlined,
+          onPressed: _abrirConfiguracionAplicacion,
+        ),
+      TipoErrorUbicacion.permisoDenegado => BotonAccion(
+          texto: 'Reintentar permiso',
+          icono: Icons.my_location_rounded,
+          onPressed: _usarMiUbicacion,
+        ),
+      TipoErrorUbicacion.tiempoAgotado ||
+      TipoErrorUbicacion.noDisponible =>
+        BotonAccion(
+          texto: 'Reintentar ubicación',
+          icono: Icons.refresh_rounded,
+          onPressed: _usarMiUbicacion,
+        ),
+      null => BotonAccion(
+          texto: 'Reintentar búsqueda',
+          icono: Icons.refresh_rounded,
+          onPressed: _consultar,
+        ),
+    };
   }
 
   @override
@@ -204,14 +282,14 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                 _EstadoCargando(mensaje: _mensajeCarga)
               else if (_error != null)
                 EstadoVacio(
-                  icono: Icons.cloud_off_outlined,
-                  titulo: 'No pudimos obtener el clima',
+                  icono: _tipoErrorUbicacion == null
+                      ? Icons.cloud_off_outlined
+                      : Icons.location_off_outlined,
+                  titulo: _tipoErrorUbicacion == null
+                      ? 'No pudimos obtener el clima'
+                      : 'No pudimos usar tu ubicación',
                   mensaje: _error!,
-                  accion: BotonAccion(
-                    texto: 'Reintentar búsqueda',
-                    icono: Icons.refresh_rounded,
-                    onPressed: _consultar,
-                  ),
+                  accion: _accionParaError(),
                 )
               else if (_resultado != null)
                 _ResultadoClima(

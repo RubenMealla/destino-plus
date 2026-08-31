@@ -8,6 +8,7 @@ import 'package:destino_plus/features/clima/servicios/servicio_clima_destino.dar
 import 'package:destino_plus/features/clima/servicios/servicio_clima_ubicacion_actual.dart';
 import 'package:destino_plus/features/explorar/pantalla_explorar.dart';
 import 'package:destino_plus/features/ubicacion/modelos/ubicacion_actual.dart';
+import 'package:destino_plus/features/ubicacion/servicios/acciones_configuracion_ubicacion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,16 +49,41 @@ class _ServicioClimaFalso implements FuenteClimaDestino {
 
 class _ServicioUbicacionFalso implements FuenteClimaUbicacionActual {
   _ServicioUbicacionFalso({
-    required this.resultado,
+    this.resultado,
+    this.error,
   });
 
-  final ClimaUbicacionActual resultado;
+  final ClimaUbicacionActual? resultado;
+  final Object? error;
   bool consultado = false;
 
   @override
   Future<ClimaUbicacionActual> consultar() async {
     consultado = true;
-    return resultado;
+
+    if (error != null) {
+      return Future<ClimaUbicacionActual>.error(error!);
+    }
+
+    return resultado!;
+  }
+}
+
+class _AccionesUbicacionFalsas
+    implements AccionesConfiguracionUbicacion {
+  bool configuracionAplicacionAbierta = false;
+  bool configuracionUbicacionAbierta = false;
+
+  @override
+  Future<bool> abrirConfiguracionAplicacion() async {
+    configuracionAplicacionAbierta = true;
+    return true;
+  }
+
+  @override
+  Future<bool> abrirConfiguracionUbicacion() async {
+    configuracionUbicacionAbierta = true;
+    return true;
   }
 }
 
@@ -112,6 +138,7 @@ ClimaUbicacionActual _resultadoUbicacionActual() {
 Widget _app({
   required FuenteClimaDestino servicio,
   FuenteClimaUbicacionActual? servicioUbicacion,
+  AccionesConfiguracionUbicacion? accionesUbicacion,
 }) {
   return MaterialApp(
     theme: TemaApp.claro,
@@ -122,6 +149,8 @@ Widget _app({
           _ServicioUbicacionFalso(
             resultado: _resultadoUbicacionActual(),
           ),
+      accionesConfiguracionUbicacion:
+          accionesUbicacion ?? _AccionesUbicacionFalsas(),
     ),
   );
 }
@@ -209,7 +238,7 @@ void main() {
     expect(find.text('21 °C'), findsOneWidget);
   });
 
-  testWidgets('muestra un estado de error y permite reintentar', (
+  testWidgets('error manual mantiene el reintento de búsqueda', (
     tester,
   ) async {
     final servicio = _ServicioClimaFalso(
@@ -228,10 +257,104 @@ void main() {
       find.text('No pudimos obtener el clima'),
       findsOneWidget,
     );
+    expect(find.text('Reintentar búsqueda'), findsOneWidget);
+  });
+
+  testWidgets('permiso bloqueado ofrece abrir configuración de la app', (
+    tester,
+  ) async {
+    final acciones = _AccionesUbicacionFalsas();
+    final ubicacion = _ServicioUbicacionFalso(
+      error: const ExcepcionUbicacion(
+        tipo: TipoErrorUbicacion.permisoDenegadoPermanentemente,
+        mensaje:
+            'El permiso de ubicación está bloqueado.',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _app(
+        servicio: _ServicioClimaFalso(resultado: _resultado()),
+        servicioUbicacion: ubicacion,
+        accionesUbicacion: acciones,
+      ),
+    );
+
+    await tester.tap(find.text('Usar mi ubicación'));
+    await tester.pumpAndSettle();
+
     expect(
-      find.text('No encontramos una ubicación para "X".'),
+      find.text('No pudimos usar tu ubicación'),
       findsOneWidget,
     );
-    expect(find.text('Reintentar búsqueda'), findsOneWidget);
+    expect(
+      find.text('Abrir configuración de la app'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Abrir configuración de la app'));
+    await tester.pump();
+
+    expect(acciones.configuracionAplicacionAbierta, isTrue);
+  });
+
+  testWidgets('ubicación desactivada ofrece abrir ajustes de ubicación', (
+    tester,
+  ) async {
+    final acciones = _AccionesUbicacionFalsas();
+    final ubicacion = _ServicioUbicacionFalso(
+      error: const ExcepcionUbicacion(
+        tipo: TipoErrorUbicacion.servicioDeshabilitado,
+        mensaje:
+            'La ubicación del dispositivo está desactivada.',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _app(
+        servicio: _ServicioClimaFalso(resultado: _resultado()),
+        servicioUbicacion: ubicacion,
+        accionesUbicacion: acciones,
+      ),
+    );
+
+    await tester.tap(find.text('Usar mi ubicación'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Abrir configuración de ubicación'),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.text('Abrir configuración de ubicación'),
+    );
+    await tester.pump();
+
+    expect(acciones.configuracionUbicacionAbierta, isTrue);
+  });
+
+  testWidgets('permiso denegado permite volver a solicitarlo', (
+    tester,
+  ) async {
+    final ubicacion = _ServicioUbicacionFalso(
+      error: const ExcepcionUbicacion(
+        tipo: TipoErrorUbicacion.permisoDenegado,
+        mensaje:
+            'Necesitamos permiso de ubicación para continuar.',
+      ),
+    );
+
+    await tester.pumpWidget(
+      _app(
+        servicio: _ServicioClimaFalso(resultado: _resultado()),
+        servicioUbicacion: ubicacion,
+      ),
+    );
+
+    await tester.tap(find.text('Usar mi ubicación'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reintentar permiso'), findsOneWidget);
   });
 }

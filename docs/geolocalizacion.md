@@ -1,6 +1,6 @@
 # Geolocalización en Destino+
 
-Destino+ incorpora geolocalización para poder utilizar la posición actual del
+Destino+ incorpora geolocalización para utilizar la posición actual del
 dispositivo en funciones relacionadas con viajes y clima.
 
 ## Tecnología
@@ -17,67 +17,98 @@ La aplicación no llama directamente al plugin desde las pantallas.
 PantallaExplorar
       |
       +-- ServicioClimaUbicacionActual
+      |       |
+      |       +-- ServicioGeolocalizacion
+      |       |       |
+      |       |       +-- geolocator
+      |       |
+      |       +-- ServicioClimaDestino
+      |               |
+      |               +-- Open-Meteo
+      |
+      +-- AccionesConfiguracionUbicacion
               |
-              +-- FuenteUbicacionActual
-              |       |
-              |       +-- ServicioGeolocalizacion
-              |               |
-              |               +-- geolocator
-              |
-              +-- FuenteClimaCoordenadas
-                      |
-                      +-- ServicioClimaDestino
-                              |
-                              +-- Open-Meteo
+              +-- geolocator
 ```
+
+## Permisos Android
+
+`android/app/src/main/AndroidManifest.xml` declara:
+
+```text
+android.permission.INTERNET
+android.permission.ACCESS_COARSE_LOCATION
+android.permission.ACCESS_FINE_LOCATION
+```
+
+`INTERNET` permite que las compilaciones Android release utilicen Supabase y
+Open-Meteo.
+
+Los permisos de ubicación se utilizan únicamente para una acción iniciada por
+el usuario: `Usar mi ubicación`.
+
+No se solicita:
+
+```text
+ACCESS_BACKGROUND_LOCATION
+```
+
+porque Destino+ no realiza seguimiento en segundo plano.
+
+El GPS se declara como hardware no obligatorio para evitar convertirlo en un
+requisito de instalación.
 
 ## Flujo de ubicación actual
 
 Al seleccionar `Usar mi ubicación`:
 
-1. Destino+ comprueba que el servicio de ubicación esté activo;
-2. verifica o solicita permiso;
-3. obtiene las coordenadas actuales;
-4. conserva temporalmente la precisión informada por la plataforma;
-5. envía latitud y longitud al servicio meteorológico;
-6. Open-Meteo devuelve el clima correspondiente a esas coordenadas;
-7. la pantalla muestra clima actual y pronóstico.
+1. se comprueba que el servicio de ubicación esté activo;
+2. se verifica o solicita permiso;
+3. se obtiene la posición;
+4. se conserva temporalmente la precisión informada;
+5. se envían latitud y longitud a Open-Meteo;
+6. la interfaz presenta el clima y el pronóstico.
 
-No es necesario convertir primero las coordenadas a un nombre de ciudad para
-consultar el clima.
+## Estados y recuperación
 
-En esta etapa la interfaz identifica el resultado como:
+Los errores se representan mediante `TipoErrorUbicacion`.
 
-```text
-Mi ubicación actual
-```
+### Servicio de ubicación desactivado
 
-y muestra también la precisión aproximada de la lectura GPS o de red.
-
-## Modelo de dominio
-
-`UbicacionActual` conserva:
+La interfaz ofrece:
 
 ```text
-latitud
-longitud
-precisionMetros
-fechaHora
+Abrir configuración de ubicación
 ```
 
-Los errores se normalizan mediante `ExcepcionUbicacion` y
-`TipoErrorUbicacion`.
+### Permiso denegado
 
-## Permisos de plataforma
+La interfaz permite volver a intentar la solicitud:
 
-La lógica para solicitar permisos ya existe.
+```text
+Reintentar permiso
+```
 
-La declaración de permisos Android y las acciones específicas ante estados
-como permiso bloqueado o servicio de ubicación desactivado se completarán en
-el último commit de esta rama.
+### Permiso bloqueado permanentemente
 
-Destino+ solo necesita ubicación mientras la aplicación está en uso. No se
-realiza seguimiento en segundo plano.
+La aplicación ya no intenta mostrar repetidamente el diálogo del sistema y
+ofrece:
+
+```text
+Abrir configuración de la app
+```
+
+### Tiempo agotado o posición no disponible
+
+La interfaz ofrece:
+
+```text
+Reintentar ubicación
+```
+
+Las acciones de configuración están desacopladas mediante
+`AccionesConfiguracionUbicacion`, por lo que pueden sustituirse por
+implementaciones falsas durante pruebas de widgets.
 
 ## Privacidad
 
@@ -86,6 +117,13 @@ La posición actual:
 - no se guarda en Supabase;
 - no se almacena en `shared_preferences`;
 - no se añade al perfil del usuario;
-- se utiliza temporalmente para la consulta solicitada.
+- no se obtiene en segundo plano;
+- se usa temporalmente cuando el usuario solicita consultar su clima.
 
-Los datos meteorológicos continúan obteniéndose mediante Open-Meteo.
+## Validación pendiente de plataforma
+
+Las pruebas automatizadas verifican la lógica y los estados de interfaz.
+
+La validación definitiva del diálogo de permisos, ubicación desactivada,
+configuración del sistema y lectura GPS debe realizarse posteriormente en un
+dispositivo o emulador Android real antes de la entrega release.

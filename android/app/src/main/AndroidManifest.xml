@@ -1,4 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Red necesaria para Supabase y Open-Meteo en builds Android release. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Destino+ solo solicita ubicación mientras la aplicación está en uso. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- El GPS mejora la precisión, pero no se exige como hardware obligatorio. -->
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+
     <application
         android:label="Destino+"
         android:name="${applicationName}"

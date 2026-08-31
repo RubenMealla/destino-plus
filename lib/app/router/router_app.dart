@@ -8,10 +8,10 @@ import '../../features/explorar/pantalla_explorar.dart';
 import '../../features/inicio/pantalla_inicio.dart';
 import '../../features/perfil/pantalla_perfil.dart';
 import '../../features/presentacion/pantalla_presentacion.dart';
+import '../../features/viajes/pantalla_detalle_viaje.dart';
 import '../../features/viajes/pantalla_formulario_viaje.dart';
 import '../../features/viajes/pantalla_viajes.dart';
 import '../../shared/widgets/navegacion_principal.dart';
-import 'pantalla_ruta_temporal.dart';
 import 'rutas_app.dart';
 
 /// Configuración declarativa y centralizada de navegación de Destino+.
@@ -97,12 +97,7 @@ abstract final class RouterApp {
                       builder: (context, state) {
                         final id = state.pathParameters['id'] ?? '';
 
-                        return PantallaRutaTemporal(
-                          titulo: 'Detalle del viaje',
-                          descripcion:
-                              'Detalle provisional del viaje $id. Su contenido real se '
-                              'implementará en el siguiente commit del CRUD.',
-                        );
+                        return PantallaDetalleViaje(viajeId: id);
                       },
                       routes: [
                         GoRoute(
@@ -110,11 +105,8 @@ abstract final class RouterApp {
                           builder: (context, state) {
                             final id = state.pathParameters['id'] ?? '';
 
-                            return PantallaRutaTemporal(
-                              titulo: 'Editar viaje',
-                              descripcion:
-                                  'Edición provisional del viaje $id. El formulario real se '
-                                  'implementará en el siguiente commit del CRUD.',
+                            return PantallaFormularioViaje(
+                              viajeId: id,
                             );
                           },
                         ),

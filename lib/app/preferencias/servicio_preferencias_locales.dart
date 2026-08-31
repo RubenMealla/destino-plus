@@ -67,8 +67,7 @@ class AlmacenPreferenciasSharedPreferences implements AlmacenPreferencias {
 /// Punto único de acceso a las preferencias locales de Destino+.
 ///
 /// Las claves concretas se mantienen aquí para evitar literales dispersos por
-/// las pantallas. En los siguientes commits se conectará la apariencia de la
-/// aplicación a este servicio.
+/// las pantallas.
 class ServicioPreferenciasLocales {
   ServicioPreferenciasLocales({
     AlmacenPreferencias? almacen,
@@ -79,6 +78,8 @@ class ServicioPreferenciasLocales {
 
   static const String _claveModoApariencia =
       'preferencias.modo_apariencia';
+  static const String _claveUnidadTemperatura =
+      'preferencias.unidad_temperatura';
 
   Future<String?> leerModoApariencia() {
     return _almacen.leerTexto(_claveModoApariencia);
@@ -90,5 +91,17 @@ class ServicioPreferenciasLocales {
 
   Future<void> eliminarModoApariencia() {
     return _almacen.eliminar(_claveModoApariencia);
+  }
+
+  Future<String?> leerUnidadTemperatura() {
+    return _almacen.leerTexto(_claveUnidadTemperatura);
+  }
+
+  Future<void> guardarUnidadTemperatura(String valor) {
+    return _almacen.guardarTexto(_claveUnidadTemperatura, valor);
+  }
+
+  Future<void> eliminarUnidadTemperatura() {
+    return _almacen.eliminar(_claveUnidadTemperatura);
   }
 }

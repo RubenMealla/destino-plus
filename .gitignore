@@ -46,3 +46,19 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# ==========================================
+# Destino+ - configuracion local y secretos
+# ==========================================
+
+# Variables de entorno
+.env
+.env.*
+
+# Configuracion privada de servicios
+config/live.json
+
+# Firma Android
+android/key.properties
+*.jks
+*.keystore

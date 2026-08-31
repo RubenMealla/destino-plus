@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/pantalla_inicio_sesion.dart';
+import '../../features/auth/pantalla_registro.dart';
 import '../../features/explorar/pantalla_explorar.dart';
 import '../../features/inicio/pantalla_inicio.dart';
 import '../../features/perfil/pantalla_perfil.dart';
@@ -16,11 +18,11 @@ import 'rutas_app.dart';
 /// destinos móviles: Inicio, Viajes, Explorar y Perfil.
 abstract final class RouterApp {
   static final GoRouter router = GoRouter(
-    initialLocation: RutasApp.inicio,
+    initialLocation: RutasApp.inicioSesion,
     routes: [
       GoRoute(
         path: RutasApp.raiz,
-        redirect: (_, __) => RutasApp.inicio,
+        redirect: (_, __) => RutasApp.inicioSesion,
       ),
       GoRoute(
         path: RutasApp.presentacion,
@@ -28,19 +30,11 @@ abstract final class RouterApp {
       ),
       GoRoute(
         path: RutasApp.inicioSesion,
-        builder: (context, state) => const PantallaRutaTemporal(
-          titulo: 'Inicio de sesión',
-          descripcion:
-              'El acceso de usuarios se implementará en la etapa de autenticación.',
-        ),
+        builder: (context, state) => const PantallaInicioSesion(),
       ),
       GoRoute(
         path: RutasApp.registro,
-        builder: (context, state) => const PantallaRutaTemporal(
-          titulo: 'Registro',
-          descripcion:
-              'El registro de usuarios se implementará en la etapa de autenticación.',
-        ),
+        builder: (context, state) => const PantallaRegistro(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

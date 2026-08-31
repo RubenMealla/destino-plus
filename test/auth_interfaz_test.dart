@@ -24,45 +24,176 @@ Widget _appDePrueba({
 }
 
 void main() {
-  testWidgets('el acceso valida campos vacíos', (tester) async {
-    await tester.pumpWidget(_appDePrueba());
-    await tester.pumpAndSettle();
+  group('Inicio de sesión', () {
+    testWidgets('valida campos vacíos', (tester) async {
+      await tester.pumpWidget(_appDePrueba());
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Iniciar sesión').first);
-    await tester.pump();
+      await tester.tap(find.text('Iniciar sesión').first);
+      await tester.pump();
 
-    expect(find.text('Ingresa tu correo electrónico.'), findsOneWidget);
-    expect(find.text('Ingresa tu contraseña.'), findsOneWidget);
+      expect(
+        find.text('Ingresa tu correo electrónico.'),
+        findsOneWidget,
+      );
+      expect(find.text('Ingresa tu contraseña.'), findsOneWidget);
+    });
+
+    testWidgets('valida formato de correo y longitud de contraseña', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_appDePrueba());
+      await tester.pumpAndSettle();
+
+      final campos = find.byType(TextFormField);
+      expect(campos, findsNWidgets(2));
+
+      await tester.enterText(campos.at(0), 'correo-invalido');
+      await tester.enterText(campos.at(1), '123');
+
+      await tester.tap(find.text('Iniciar sesión').first);
+      await tester.pump();
+
+      expect(
+        find.text('Ingresa un correo electrónico válido.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('La contraseña debe tener al menos 6 caracteres.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('permite mostrar y volver a ocultar la contraseña', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_appDePrueba());
+      await tester.pumpAndSettle();
+
+      var campoClave =
+          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+      expect(campoClave.obscureText, isTrue);
+      expect(find.byTooltip('Mostrar contraseña'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Mostrar contraseña'));
+      await tester.pump();
+
+      campoClave =
+          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+      expect(campoClave.obscureText, isFalse);
+      expect(find.byTooltip('Ocultar contraseña'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Ocultar contraseña'));
+      await tester.pump();
+
+      campoClave =
+          tester.widget<TextFormField>(find.byType(TextFormField).at(1));
+      expect(campoClave.obscureText, isTrue);
+    });
+
+    testWidgets('se puede navegar de acceso a registro', (tester) async {
+      await tester.pumpWidget(_appDePrueba());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Crear cuenta'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Crea tu cuenta'), findsOneWidget);
+      expect(find.text('Nombre'), findsOneWidget);
+      expect(find.text('Confirmar contraseña'), findsOneWidget);
+    });
   });
 
-  testWidgets('se puede navegar de acceso a registro', (tester) async {
-    await tester.pumpWidget(_appDePrueba());
-    await tester.pumpAndSettle();
+  group('Registro', () {
+    testWidgets('valida todos los campos obligatorios vacíos', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _appDePrueba(rutaInicial: RutasApp.registro),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Crear cuenta'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Crear cuenta').first);
+      await tester.pump();
 
-    expect(find.text('Crea tu cuenta'), findsOneWidget);
-    expect(find.text('Nombre'), findsOneWidget);
-    expect(find.text('Confirmar contraseña'), findsOneWidget);
-  });
+      expect(find.text('Ingresa tu nombre.'), findsOneWidget);
+      expect(
+        find.text('Ingresa tu correo electrónico.'),
+        findsOneWidget,
+      );
+      expect(find.text('Ingresa una contraseña.'), findsOneWidget);
+      expect(find.text('Confirma tu contraseña.'), findsOneWidget);
+    });
 
-  testWidgets('registro detecta contraseñas diferentes', (tester) async {
-    await tester.pumpWidget(
-      _appDePrueba(rutaInicial: RutasApp.registro),
-    );
-    await tester.pumpAndSettle();
+    testWidgets('valida nombre corto correo inválido y contraseña corta', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _appDePrueba(rutaInicial: RutasApp.registro),
+      );
+      await tester.pumpAndSettle();
 
-    final campos = find.byType(TextFormField);
+      final campos = find.byType(TextFormField);
+      expect(campos, findsNWidgets(4));
 
-    await tester.enterText(campos.at(0), 'Ana');
-    await tester.enterText(campos.at(1), 'ana@ejemplo.com');
-    await tester.enterText(campos.at(2), '123456');
-    await tester.enterText(campos.at(3), '654321');
+      await tester.enterText(campos.at(0), 'A');
+      await tester.enterText(campos.at(1), 'correo-invalido');
+      await tester.enterText(campos.at(2), '123');
+      await tester.enterText(campos.at(3), '123');
 
-    await tester.tap(find.text('Crear cuenta').first);
-    await tester.pump();
+      await tester.tap(find.text('Crear cuenta').first);
+      await tester.pump();
 
-    expect(find.text('Las contraseñas no coinciden.'), findsOneWidget);
+      expect(
+        find.text('El nombre debe tener al menos 2 caracteres.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Ingresa un correo electrónico válido.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('La contraseña debe tener al menos 6 caracteres.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('detecta contraseñas diferentes', (tester) async {
+      await tester.pumpWidget(
+        _appDePrueba(rutaInicial: RutasApp.registro),
+      );
+      await tester.pumpAndSettle();
+
+      final campos = find.byType(TextFormField);
+
+      await tester.enterText(campos.at(0), 'Ana');
+      await tester.enterText(campos.at(1), 'ana@ejemplo.com');
+      await tester.enterText(campos.at(2), '123456');
+      await tester.enterText(campos.at(3), '654321');
+
+      await tester.tap(find.text('Crear cuenta').first);
+      await tester.pump();
+
+      expect(
+        find.text('Las contraseñas no coinciden.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('puede volver desde registro al inicio de sesión', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _appDePrueba(rutaInicial: RutasApp.registro),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Crea tu cuenta'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Volver'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bienvenido de nuevo'), findsOneWidget);
+    });
   });
 }

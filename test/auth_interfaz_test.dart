@@ -1,29 +1,31 @@
-import 'package:destino_plus/app/destino_plus_app.dart';
 import 'package:destino_plus/app/router/router_app.dart';
 import 'package:destino_plus/app/router/rutas_app.dart';
+import 'package:destino_plus/app/theme/tema_app.dart';
+import 'package:destino_plus/features/auth/estado/estado_sesion.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+Widget _appDePrueba({
+  String rutaInicial = RutasApp.inicioSesion,
+}) {
+  final router = RouterApp.crear(
+    protegerRutas: false,
+    ubicacionInicial: rutaInicial,
+  );
+
+  return ChangeNotifierProvider<EstadoSesion>.value(
+    value: EstadoSesion.instancia,
+    child: MaterialApp.router(
+      theme: TemaApp.claro,
+      routerConfig: router,
+    ),
+  );
+}
 
 void main() {
-  tearDown(() {
-    RouterApp.router.go(RutasApp.inicioSesion);
-  });
-
-  testWidgets('la aplicación inicia en la pantalla de acceso', (tester) async {
-    RouterApp.router.go(RutasApp.inicioSesion);
-
-    await tester.pumpWidget(const DestinoPlusApp());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Bienvenido de nuevo'), findsOneWidget);
-    expect(find.text('Correo electrónico'), findsOneWidget);
-    expect(find.text('Contraseña'), findsOneWidget);
-    expect(find.text('Iniciar sesión'), findsWidgets);
-  });
-
   testWidgets('el acceso valida campos vacíos', (tester) async {
-    RouterApp.router.go(RutasApp.inicioSesion);
-
-    await tester.pumpWidget(const DestinoPlusApp());
+    await tester.pumpWidget(_appDePrueba());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Iniciar sesión').first);
@@ -34,9 +36,7 @@ void main() {
   });
 
   testWidgets('se puede navegar de acceso a registro', (tester) async {
-    RouterApp.router.go(RutasApp.inicioSesion);
-
-    await tester.pumpWidget(const DestinoPlusApp());
+    await tester.pumpWidget(_appDePrueba());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Crear cuenta'));
@@ -48,29 +48,17 @@ void main() {
   });
 
   testWidgets('registro detecta contraseñas diferentes', (tester) async {
-    RouterApp.router.go(RutasApp.registro);
-
-    await tester.pumpWidget(const DestinoPlusApp());
+    await tester.pumpWidget(
+      _appDePrueba(rutaInicial: RutasApp.registro),
+    );
     await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.widgetWithText(
-        find.byType(TextFormField),
-        'Nombre',
-      ),
-      'Ana',
-    );
-    await tester.enterText(
-      find.widgetWithText(
-        find.byType(TextFormField),
-        'Correo electrónico',
-      ),
-      'ana@ejemplo.com',
-    );
+    final campos = find.byType(TextFormField);
 
-    final camposClave = find.byType(TextFormField);
-    await tester.enterText(camposClave.at(2), '123456');
-    await tester.enterText(camposClave.at(3), '654321');
+    await tester.enterText(campos.at(0), 'Ana');
+    await tester.enterText(campos.at(1), 'ana@ejemplo.com');
+    await tester.enterText(campos.at(2), '123456');
+    await tester.enterText(campos.at(3), '654321');
 
     await tester.tap(find.text('Crear cuenta').first);
     await tester.pump();

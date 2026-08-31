@@ -1,20 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../app/theme/dimensiones_app.dart';
+import '../../features/auth/estado/estado_sesion.dart';
+import '../../features/auth/servicios/servicio_autenticacion.dart';
+import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/encabezado_seccion.dart';
 import '../../shared/widgets/tarjeta_informativa.dart';
 
-/// Estructura inicial del perfil y los ajustes.
-///
-/// La información del usuario y sus preferencias se incorporarán cuando se
-/// implementen autenticación y persistencia local.
-class PantallaPerfil extends StatelessWidget {
+/// Pantalla inicial del perfil y los ajustes del usuario.
+class PantallaPerfil extends StatefulWidget {
   const PantallaPerfil({super.key});
+
+  @override
+  State<PantallaPerfil> createState() => _PantallaPerfilState();
+}
+
+class _PantallaPerfilState extends State<PantallaPerfil> {
+  bool _cerrandoSesion = false;
+
+  Future<void> _cerrarSesion() async {
+    if (_cerrandoSesion) {
+      return;
+    }
+
+    setState(() {
+      _cerrandoSesion = true;
+    });
+
+    try {
+      await context.read<EstadoSesion>().cerrarSesion();
+    } on ExcepcionAutenticacion catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.mensaje)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _cerrandoSesion = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final estadoSesion = context.watch<EstadoSesion>();
+    final usuario = estadoSesion.usuario;
+    final metadata = usuario?.userMetadata;
+    final nombre = (metadata?['nombre'] as String?)?.trim();
+    final nombreVisible =
+        nombre != null && nombre.isNotEmpty ? nombre : 'Usuario de Destino+';
+    final correoVisible = usuario?.email ?? 'Correo no disponible';
 
     return Scaffold(
       appBar: AppBar(
@@ -38,13 +81,15 @@ class PantallaPerfil extends StatelessWidget {
                     ),
                     const SizedBox(height: DimensionesApp.espacio12),
                     Text(
-                      'Usuario de Destino+',
+                      nombreVisible,
                       style: textTheme.titleLarge,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: DimensionesApp.espacio4),
                     Text(
-                      'Perfil pendiente de autenticación',
+                      correoVisible,
                       style: textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -71,6 +116,12 @@ class PantallaPerfil extends StatelessWidget {
                 child: Text(
                   'Las preferencias del usuario se incorporarán en una etapa posterior.',
                 ),
+              ),
+              const SizedBox(height: DimensionesApp.espacio24),
+              BotonAccion(
+                texto: _cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión',
+                icono: _cerrandoSesion ? null : Icons.logout_rounded,
+                onPressed: _cerrandoSesion ? null : _cerrarSesion,
               ),
             ],
           ),

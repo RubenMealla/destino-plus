@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../app/router/rutas_app.dart';
 import '../../app/theme/dimensiones_app.dart';
 import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/marca_destino_plus.dart';
+import 'estado/estado_sesion.dart';
 import 'servicios/servicio_autenticacion.dart';
 import 'widgets/campo_clave.dart';
 
@@ -70,10 +72,10 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
     });
 
     try {
-      await ServicioAutenticacion.instancia.iniciarSesion(
-        correo: _correoController.text,
-        clave: _claveController.text,
-      );
+      await context.read<EstadoSesion>().iniciarSesion(
+            correo: _correoController.text,
+            clave: _claveController.text,
+          );
 
       if (!mounted) {
         return;
@@ -161,7 +163,8 @@ class _PantallaInicioSesionState extends State<PantallaInicioSesion> {
                     ),
                     const SizedBox(height: DimensionesApp.espacio24),
                     BotonAccion(
-                      texto: _procesando ? 'Iniciando sesión...' : 'Iniciar sesión',
+                      texto:
+                          _procesando ? 'Iniciando sesión...' : 'Iniciar sesión',
                       icono: _procesando ? null : Icons.login_rounded,
                       onPressed: _procesando ? null : _iniciarSesion,
                     ),

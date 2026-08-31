@@ -2,18 +2,12 @@
 
 Destino+ utiliza Supabase para la autenticación de usuarios.
 
-Esta configuración corresponde al entorno de desarrollo. No deben escribirse
-claves privadas ni credenciales administrativas dentro del código fuente.
+La configuración se recibe mediante `dart-define`. No deben escribirse claves
+privadas ni credenciales administrativas dentro del código fuente.
 
-## 1. Crear el proyecto
+## Datos necesarios
 
-1. Crear un proyecto en Supabase.
-2. Esperar a que el proyecto termine de inicializarse.
-3. Verificar que el proveedor de autenticación por correo electrónico esté habilitado.
-
-## 2. Obtener los datos públicos del cliente
-
-Desde el panel del proyecto, obtener:
+Desde el panel del proyecto de Supabase se necesitan:
 
 - URL del proyecto;
 - clave pública `publishable`.
@@ -25,17 +19,49 @@ La aplicación cliente NO debe utilizar:
 - contraseñas de base de datos;
 - credenciales administrativas.
 
-## 3. Ejecutar Destino+ con la configuración
+## Opción recomendada para desarrollo local
 
-PowerShell:
+El repositorio incluye:
+
+```text
+config/supabase.example.json
+```
+
+Crear una copia local:
+
+```powershell
+Copy-Item config/supabase.example.json config/supabase.local.json
+```
+
+Editar `config/supabase.local.json` con los valores del proyecto:
+
+```json
+{
+  "SUPABASE_URL": "https://TU-PROYECTO.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "TU_CLAVE_PUBLICA"
+}
+```
+
+`config/supabase.local.json` está ignorado por Git y no debe subirse al
+repositorio.
+
+Después, la ejecución habitual queda reducida a:
+
+```powershell
+flutter run -d chrome --dart-define-from-file=config/supabase.local.json
+```
+
+No es necesario volver a escribir la URL y la clave en cada comando.
+
+## Ejecución con valores escritos en el comando
+
+También sigue siendo válido:
 
 ```powershell
 flutter run -d chrome --dart-define=SUPABASE_URL="https://TU-PROYECTO.supabase.co" --dart-define=SUPABASE_PUBLISHABLE_KEY="TU_CLAVE_PUBLICA"
 ```
 
-La misma estrategia se podrá utilizar posteriormente en Android.
-
-## 4. Confirmación de correo
+## Confirmación de correo
 
 Supabase puede requerir confirmación de correo después del registro.
 
@@ -48,19 +74,38 @@ Si la confirmación está habilitada:
 
 Destino+ detecta este caso y muestra una indicación en español.
 
-## 5. Seguridad
+## Estado global y rutas protegidas
 
-La clave `publishable` está diseñada por Supabase para aplicaciones cliente.
-La seguridad de los datos no debe depender de ocultar esta clave.
+La sesión de Supabase se mantiene en un estado global de la aplicación.
+
+Cuando no existe una sesión:
+
+- las rutas principales redirigen al inicio de sesión;
+- el usuario puede acceder al registro.
+
+Cuando existe una sesión:
+
+- el usuario puede entrar a Inicio, Viajes, Explorar y Perfil;
+- intentar volver al acceso o registro redirige al Inicio;
+- la sesión existente puede recuperarse al volver a abrir la aplicación.
+
+Desde Perfil se puede cerrar la sesión.
+
+## Seguridad
+
+La clave `publishable` está diseñada para aplicaciones cliente. La seguridad
+de los datos no debe depender de ocultarla.
+
+Aun así, Destino+ mantiene la configuración local fuera del repositorio para
+evitar mezclar datos de entornos y conservar una entrega limpia.
 
 Cuando se implemente la base de datos se deberán configurar políticas de
 Row Level Security (RLS) apropiadas para cada tabla.
 
 Nunca debe usarse una clave `service_role` dentro de Flutter.
 
-## 6. Desarrollo sin configuración
+## Desarrollo sin configuración
 
-Si `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` no están definidos, la
-aplicación puede iniciar para continuar con el desarrollo visual, pero las
-operaciones reales de inicio de sesión y registro mostrarán que Supabase
-todavía no está configurado.
+Si no se proporciona configuración de Supabase, la aplicación puede iniciar
+para continuar con revisiones de interfaz, pero no podrá autenticar usuarios
+reales.

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../app/router/rutas_app.dart';
 import '../../app/theme/dimensiones_app.dart';
 import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/marca_destino_plus.dart';
+import 'estado/estado_sesion.dart';
 import 'servicios/servicio_autenticacion.dart';
 import 'widgets/campo_clave.dart';
 
@@ -100,11 +102,11 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     });
 
     try {
-      final resultado = await ServicioAutenticacion.instancia.registrar(
-        nombre: _nombreController.text,
-        correo: _correoController.text,
-        clave: _claveController.text,
-      );
+      final resultado = await context.read<EstadoSesion>().registrar(
+            nombre: _nombreController.text,
+            correo: _correoController.text,
+            clave: _claveController.text,
+          );
 
       if (!mounted) {
         return;

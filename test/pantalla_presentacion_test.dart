@@ -1,11 +1,18 @@
-import 'package:destino_plus/app/destino_plus_app.dart';
+import 'package:destino_plus/app/theme/tema_app.dart';
+import 'package:destino_plus/features/presentacion/pantalla_presentacion.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('la presentación muestra la identidad base de Destino+', (
+  testWidgets('la presentación conserva la identidad visual de Destino+', (
     tester,
   ) async {
-    await tester.pumpWidget(const DestinoPlusApp());
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: TemaApp.claro,
+        home: const PantallaPresentacion(),
+      ),
+    );
 
     expect(find.text('Destino+'), findsOneWidget);
     expect(

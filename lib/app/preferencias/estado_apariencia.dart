@@ -37,13 +37,12 @@ extension ModoAparienciaX on ModoApariencia {
 }
 
 /// Estado global encargado de la apariencia persistente de Destino+.
-///
-/// La interfaz se integrará con este estado en el siguiente commit. Esta clase
-/// concentra la carga, el cambio y la persistencia del modo seleccionado.
 class EstadoApariencia extends ChangeNotifier {
   EstadoApariencia({
     ServicioPreferenciasLocales? servicio,
   }) : _servicio = servicio ?? ServicioPreferenciasLocales();
+
+  static final EstadoApariencia instancia = EstadoApariencia();
 
   final ServicioPreferenciasLocales _servicio;
 
@@ -56,29 +55,38 @@ class EstadoApariencia extends ChangeNotifier {
 
   bool get cargado => _cargado;
 
+  /// Recupera la preferencia guardada.
+  ///
+  /// Si el almacenamiento local no está disponible, la aplicación puede
+  /// continuar usando la apariencia del sistema.
   Future<void> cargar() async {
-    final valor = await _servicio.leerModoApariencia();
-    _modo = ModoAparienciaX.desdeValorPersistido(valor);
-    _cargado = true;
-    notifyListeners();
+    try {
+      final valor = await _servicio.leerModoApariencia();
+      _modo = ModoAparienciaX.desdeValorPersistido(valor);
+    } catch (_) {
+      _modo = ModoApariencia.sistema;
+    } finally {
+      _cargado = true;
+      notifyListeners();
+    }
   }
 
+  /// Persiste un nuevo modo y actualiza la interfaz después de guardarlo.
   Future<void> cambiarModo(ModoApariencia nuevoModo) async {
     if (_modo == nuevoModo && _cargado) {
       return;
     }
 
+    if (nuevoModo == ModoApariencia.sistema) {
+      await _servicio.eliminarModoApariencia();
+    } else {
+      await _servicio.guardarModoApariencia(
+        nuevoModo.valorPersistido,
+      );
+    }
+
     _modo = nuevoModo;
     _cargado = true;
     notifyListeners();
-
-    if (nuevoModo == ModoApariencia.sistema) {
-      await _servicio.eliminarModoApariencia();
-      return;
-    }
-
-    await _servicio.guardarModoApariencia(
-      nuevoModo.valorPersistido,
-    );
   }
 }

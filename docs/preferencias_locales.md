@@ -14,17 +14,19 @@ La persistencia local se implementa con:
 shared_preferences
 ```
 
-La aplicación no accede directamente al paquete desde las pantallas. Existe
-una capa intermedia:
+La aplicación no accede directamente al paquete desde las pantallas para leer
+o escribir claves. Existe una capa intermedia:
 
 ```text
-EstadoApariencia
-        |
-        +-- ServicioPreferenciasLocales
-                |
-                +-- AlmacenPreferencias
-                        |
-                        +-- AlmacenPreferenciasSharedPreferences
+MaterialApp
+    |
+    +-- EstadoApariencia
+            |
+            +-- ServicioPreferenciasLocales
+                    |
+                    +-- AlmacenPreferencias
+                            |
+                            +-- AlmacenPreferenciasSharedPreferences
 ```
 
 Esta separación permite:
@@ -58,24 +60,25 @@ oscuro
 | `claro` | `ThemeMode.light` |
 | `oscuro` | `ThemeMode.dark` |
 
+La preferencia se carga antes de mostrar `DestinoPlusApp`, evitando que la
+aplicación cambie de tema visual unos instantes después de iniciarse.
+
+La pantalla `Perfil` permite seleccionar cualquiera de los tres modos. El
+cambio modifica el `themeMode` global de `MaterialApp`.
+
 Cuando se selecciona `Sistema`, la preferencia explícita se elimina y la
 aplicación vuelve a respetar la configuración del dispositivo.
 
-Si se encuentra un valor local desconocido o antiguo, Destino+ utiliza
-`Sistema` como alternativa segura.
+Si el almacenamiento local no puede leerse durante el inicio, Destino+
+continúa usando `Sistema` como alternativa segura.
 
-La conexión de este estado con `MaterialApp` y con la pantalla de Perfil se
-realizará en el siguiente commit.
+## Alcance del almacenamiento local
 
-## Qué sí corresponde a almacenamiento local
-
-Ejemplos apropiados:
+Sí corresponde a este mecanismo:
 
 - apariencia;
 - preferencias de visualización;
 - futuras unidades o ajustes pequeños del dispositivo.
-
-## Qué no se almacena aquí
 
 No se duplican mediante `shared_preferences`:
 

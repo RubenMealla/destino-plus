@@ -5,7 +5,9 @@ import 'package:destino_plus/features/clima/modelos/pronostico_clima.dart';
 import 'package:destino_plus/features/clima/modelos/ubicacion_clima.dart';
 import 'package:destino_plus/features/clima/servicios/cliente_open_meteo.dart';
 import 'package:destino_plus/features/clima/servicios/servicio_clima_destino.dart';
+import 'package:destino_plus/features/clima/servicios/servicio_clima_ubicacion_actual.dart';
 import 'package:destino_plus/features/explorar/pantalla_explorar.dart';
+import 'package:destino_plus/features/ubicacion/modelos/ubicacion_actual.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,16 +46,31 @@ class _ServicioClimaFalso implements FuenteClimaDestino {
   }
 }
 
-ClimaDestino _resultado() {
+class _ServicioUbicacionFalso implements FuenteClimaUbicacionActual {
+  _ServicioUbicacionFalso({
+    required this.resultado,
+  });
+
+  final ClimaUbicacionActual resultado;
+  bool consultado = false;
+
+  @override
+  Future<ClimaUbicacionActual> consultar() async {
+    consultado = true;
+    return resultado;
+  }
+}
+
+ClimaDestino _resultado({
+  String nombre = 'Tarija, Bolivia',
+}) {
   return ClimaDestino(
-    consulta: 'Tarija, Bolivia',
-    ubicacion: const UbicacionClima(
+    consulta: nombre,
+    ubicacion: UbicacionClima(
       id: 1,
-      nombre: 'Tarija',
+      nombre: nombre,
       latitud: -21.535,
       longitud: -64.729,
-      pais: 'Bolivia',
-      region: 'Tarija',
       zonaHoraria: 'America/La_Paz',
     ),
     pronostico: PronosticoClima.fromMap({
@@ -80,10 +97,32 @@ ClimaDestino _resultado() {
   );
 }
 
-Widget _app(FuenteClimaDestino servicio) {
+ClimaUbicacionActual _resultadoUbicacionActual() {
+  return ClimaUbicacionActual(
+    ubicacion: UbicacionActual(
+      latitud: -21.535,
+      longitud: -64.729,
+      precisionMetros: 6.5,
+      fechaHora: DateTime(2026, 8, 31, 12),
+    ),
+    clima: _resultado(nombre: 'Mi ubicación actual'),
+  );
+}
+
+Widget _app({
+  required FuenteClimaDestino servicio,
+  FuenteClimaUbicacionActual? servicioUbicacion,
+}) {
   return MaterialApp(
     theme: TemaApp.claro,
-    home: PantallaExplorar(servicioClima: servicio),
+    home: PantallaExplorar(
+      servicioClima: servicio,
+      servicioClimaUbicacion:
+          servicioUbicacion ??
+          _ServicioUbicacionFalso(
+            resultado: _resultadoUbicacionActual(),
+          ),
+    ),
   );
 }
 
@@ -91,13 +130,14 @@ void main() {
   testWidgets('muestra estado inicial antes de consultar', (tester) async {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
-    await tester.pumpWidget(_app(servicio));
+    await tester.pumpWidget(_app(servicio: servicio));
 
     expect(
       find.text('Explora el clima de tu próximo destino'),
       findsOneWidget,
     );
     expect(find.text('Consultar clima'), findsOneWidget);
+    expect(find.text('Usar mi ubicación'), findsOneWidget);
   });
 
   testWidgets('muestra loading mientras espera la API', (tester) async {
@@ -105,7 +145,7 @@ void main() {
       completarManualmente: true,
     );
 
-    await tester.pumpWidget(_app(servicio));
+    await tester.pumpWidget(_app(servicio: servicio));
 
     await tester.enterText(
       find.byType(TextField),
@@ -127,7 +167,7 @@ void main() {
   testWidgets('muestra clima actual y pronóstico correcto', (tester) async {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
-    await tester.pumpWidget(_app(servicio));
+    await tester.pumpWidget(_app(servicio: servicio));
 
     await tester.enterText(
       find.byType(TextField),
@@ -144,6 +184,31 @@ void main() {
     expect(find.textContaining('America/La_Paz'), findsOneWidget);
   });
 
+  testWidgets('usa ubicación actual y muestra su precisión', (tester) async {
+    final climaTexto = _ServicioClimaFalso(resultado: _resultado());
+    final ubicacion = _ServicioUbicacionFalso(
+      resultado: _resultadoUbicacionActual(),
+    );
+
+    await tester.pumpWidget(
+      _app(
+        servicio: climaTexto,
+        servicioUbicacion: ubicacion,
+      ),
+    );
+
+    await tester.tap(find.text('Usar mi ubicación'));
+    await tester.pumpAndSettle();
+
+    expect(ubicacion.consultado, isTrue);
+    expect(find.text('Mi ubicación actual'), findsOneWidget);
+    expect(
+      find.textContaining('precisión aproximada de 6.5 m'),
+      findsOneWidget,
+    );
+    expect(find.text('21 °C'), findsOneWidget);
+  });
+
   testWidgets('muestra un estado de error y permite reintentar', (
     tester,
   ) async {
@@ -153,7 +218,7 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(_app(servicio));
+    await tester.pumpWidget(_app(servicio: servicio));
 
     await tester.enterText(find.byType(TextField), 'Xx');
     await tester.tap(find.text('Consultar clima'));
@@ -167,6 +232,6 @@ void main() {
       find.text('No encontramos una ubicación para "X".'),
       findsOneWidget,
     );
-    expect(find.text('Reintentar'), findsOneWidget);
+    expect(find.text('Reintentar búsqueda'), findsOneWidget);
   });
 }

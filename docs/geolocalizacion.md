@@ -13,40 +13,50 @@ geolocator
 
 La aplicación no llama directamente al plugin desde las pantallas.
 
-La arquitectura inicial es:
-
 ```text
-Interfaz
-   |
-   +-- ServicioGeolocalizacion
-           |
-           +-- FuenteGeolocalizacion
-                   |
-                   +-- FuenteGeolocalizacionGeolocator
-                           |
-                           +-- geolocator
+PantallaExplorar
+      |
+      +-- ServicioClimaUbicacionActual
+              |
+              +-- FuenteUbicacionActual
+              |       |
+              |       +-- ServicioGeolocalizacion
+              |               |
+              |               +-- geolocator
+              |
+              +-- FuenteClimaCoordenadas
+                      |
+                      +-- ServicioClimaDestino
+                              |
+                              +-- Open-Meteo
 ```
 
-Esto permite sustituir la plataforma por una fuente falsa durante las pruebas
-automatizadas.
+## Flujo de ubicación actual
 
-## Flujo del servicio
+Al seleccionar `Usar mi ubicación`:
 
-`ServicioGeolocalizacion.obtenerUbicacionActual()` realiza:
+1. Destino+ comprueba que el servicio de ubicación esté activo;
+2. verifica o solicita permiso;
+3. obtiene las coordenadas actuales;
+4. conserva temporalmente la precisión informada por la plataforma;
+5. envía latitud y longitud al servicio meteorológico;
+6. Open-Meteo devuelve el clima correspondiente a esas coordenadas;
+7. la pantalla muestra clima actual y pronóstico.
 
-1. comprobar si el servicio de ubicación está activo;
-2. comprobar el permiso actual;
-3. solicitar permiso si todavía está denegado;
-4. detenerse si el permiso se mantiene denegado o está bloqueado;
-5. obtener una posición actual;
-6. convertir la respuesta del plugin a `UbicacionActual`.
+No es necesario convertir primero las coordenadas a un nombre de ciudad para
+consultar el clima.
 
-La lectura utiliza precisión alta y un límite de espera de 15 segundos.
+En esta etapa la interfaz identifica el resultado como:
+
+```text
+Mi ubicación actual
+```
+
+y muestra también la precisión aproximada de la lectura GPS o de red.
 
 ## Modelo de dominio
 
-`UbicacionActual` conserva únicamente los datos que Destino+ necesita en esta
-etapa:
+`UbicacionActual` conserva:
 
 ```text
 latitud
@@ -56,30 +66,26 @@ fechaHora
 ```
 
 Los errores se normalizan mediante `ExcepcionUbicacion` y
-`TipoErrorUbicacion`:
-
-```text
-servicioDeshabilitado
-permisoDenegado
-permisoDenegadoPermanentemente
-tiempoAgotado
-noDisponible
-```
+`TipoErrorUbicacion`.
 
 ## Permisos de plataforma
 
-Este primer commit prepara la lógica y las pruebas.
+La lógica para solicitar permisos ya existe.
 
-La declaración explícita de permisos de Android y la experiencia visual para
-los distintos estados se incorporarán antes de cerrar la rama.
+La declaración de permisos Android y las acciones específicas ante estados
+como permiso bloqueado o servicio de ubicación desactivado se completarán en
+el último commit de esta rama.
 
 Destino+ solo necesita ubicación mientras la aplicación está en uso. No se
-planea seguimiento de ubicación en segundo plano.
+realiza seguimiento en segundo plano.
 
 ## Privacidad
 
-La posición actual no se persiste en Supabase ni en `shared_preferences` en
-esta etapa.
+La posición actual:
 
-Se utilizará de forma temporal para funciones solicitadas por el usuario,
-como consultar el clima correspondiente a su ubicación actual.
+- no se guarda en Supabase;
+- no se almacena en `shared_preferences`;
+- no se añade al perfil del usuario;
+- se utiliza temporalmente para la consulta solicitada.
+
+Los datos meteorológicos continúan obteniéndose mediante Open-Meteo.

@@ -15,13 +15,24 @@ class ClimaDestino {
   final PronosticoClima pronostico;
 }
 
-/// Contrato consumido por la interfaz de clima.
+/// Contrato consumido por la interfaz de clima para búsquedas por texto.
 abstract interface class FuenteClimaDestino {
   Future<ClimaDestino> consultar(String destino);
 }
 
-/// Convierte un destino escrito por el usuario en un pronóstico utilizable.
-class ServicioClimaDestino implements FuenteClimaDestino {
+/// Contrato para obtener clima cuando ya se conocen las coordenadas.
+abstract interface class FuenteClimaCoordenadas {
+  Future<ClimaDestino> consultarCoordenadas({
+    required double latitud,
+    required double longitud,
+    String nombre = 'Mi ubicación actual',
+  });
+}
+
+/// Convierte un destino escrito por el usuario o unas coordenadas en un
+/// pronóstico utilizable.
+class ServicioClimaDestino
+    implements FuenteClimaDestino, FuenteClimaCoordenadas {
   ServicioClimaDestino({
     FuenteClimaRemota? fuente,
   }) : _fuente = fuente ?? ClienteOpenMeteo();
@@ -43,8 +54,6 @@ class ServicioClimaDestino implements FuenteClimaDestino {
       limite: 8,
     );
 
-    // Los destinos guardados pueden incluir país o región. Si la búsqueda
-    // completa no devuelve resultados, se intenta con la primera parte.
     if (ubicaciones.isEmpty && consulta.contains(',')) {
       final ciudad = consulta.split(',').first.trim();
 
@@ -75,6 +84,34 @@ class ServicioClimaDestino implements FuenteClimaDestino {
     return ClimaDestino(
       consulta: consulta,
       ubicacion: ubicacion,
+      pronostico: pronostico,
+    );
+  }
+
+  @override
+  Future<ClimaDestino> consultarCoordenadas({
+    required double latitud,
+    required double longitud,
+    String nombre = 'Mi ubicación actual',
+  }) async {
+    final nombreVisible = nombre.trim().isEmpty
+        ? 'Mi ubicación actual'
+        : nombre.trim();
+
+    final pronostico = await _fuente.obtenerPronostico(
+      latitud: latitud,
+      longitud: longitud,
+    );
+
+    return ClimaDestino(
+      consulta: nombreVisible,
+      ubicacion: UbicacionClima(
+        id: 0,
+        nombre: nombreVisible,
+        latitud: latitud,
+        longitud: longitud,
+        zonaHoraria: pronostico.zonaHoraria,
+      ),
       pronostico: pronostico,
     );
   }

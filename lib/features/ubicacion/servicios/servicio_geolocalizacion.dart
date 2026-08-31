@@ -19,6 +19,12 @@ class LecturaGeolocalizacion {
   final DateTime fechaHora;
 }
 
+/// Contrato consumido por otras funciones de Destino+ que necesitan la
+/// posición actual, sin conocer el plugin utilizado para obtenerla.
+abstract interface class FuenteUbicacionActual {
+  Future<UbicacionActual> obtenerUbicacionActual();
+}
+
 /// Contrato para desacoplar la lógica de Destino+ del plugin `geolocator`.
 abstract interface class FuenteGeolocalizacion {
   Future<bool> servicioHabilitado();
@@ -83,13 +89,14 @@ class FuenteGeolocalizacionGeolocator implements FuenteGeolocalizacion {
 }
 
 /// Orquesta la comprobación del servicio, permisos y lectura de coordenadas.
-class ServicioGeolocalizacion {
+class ServicioGeolocalizacion implements FuenteUbicacionActual {
   ServicioGeolocalizacion({
     FuenteGeolocalizacion? fuente,
   }) : _fuente = fuente ?? const FuenteGeolocalizacionGeolocator();
 
   final FuenteGeolocalizacion _fuente;
 
+  @override
   Future<UbicacionActual> obtenerUbicacionActual() async {
     bool servicioActivo;
 

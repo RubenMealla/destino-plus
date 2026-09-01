@@ -4,6 +4,7 @@ import 'package:destino_plus/features/viajes/pantalla_detalle_viaje.dart';
 import 'package:destino_plus/features/viajes/servicios/repositorio_viajes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'soporte/fuente_actividades_vacia_prueba.dart';
 
 class _FuenteViajesFalsa implements FuenteViajes {
@@ -72,23 +73,24 @@ void main() {
         home: PantallaDetalleViaje(
           viajeId: 'viaje-1',
           repositorio: fuente,
-          repositorioActividades:
-              const FuenteActividadesVaciaPrueba(),
+          repositorioActividades: const FuenteActividadesVaciaPrueba(),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Eliminar viaje'));
     await tester.tap(find.text('Eliminar viaje'));
     await tester.pumpAndSettle();
 
     expect(find.text('Eliminar viaje'), findsWidgets);
     expect(
-      find.textContaining('Esta acción no se puede deshacer.'),
+      find.textContaining('Esta acción no se puede deshacer'),
       findsOneWidget,
     );
     expect(fuente.eliminado, isFalse);
 
+    await tester.ensureVisible(find.text('Cancelar'));
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
 
@@ -106,8 +108,7 @@ void main() {
             builder: (_) => PantallaDetalleViaje(
               viajeId: 'viaje-1',
               repositorio: fuente,
-              repositorioActividades:
-                  const FuenteActividadesVaciaPrueba(),
+              repositorioActividades: const FuenteActividadesVaciaPrueba(),
             ),
           ),
         ),
@@ -115,12 +116,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Eliminar viaje'));
     await tester.tap(find.text('Eliminar viaje'));
     await tester.pumpAndSettle();
 
     final eliminar = find.widgetWithText(FilledButton, 'Eliminar');
     expect(eliminar, findsOneWidget);
 
+    await tester.ensureVisible(eliminar);
     await tester.tap(eliminar);
     await tester.pumpAndSettle();
 

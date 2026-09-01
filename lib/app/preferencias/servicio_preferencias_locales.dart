@@ -22,9 +22,13 @@ abstract interface class AlmacenPreferencias {
 
 /// Implementación real mediante `shared_preferences`.
 class AlmacenPreferenciasSharedPreferences implements AlmacenPreferencias {
-  AlmacenPreferenciasSharedPreferences({
+  factory AlmacenPreferenciasSharedPreferences({
     SharedPreferencesAsync? preferencias,
-  }) : _preferencias = preferencias;
+  }) {
+    return AlmacenPreferenciasSharedPreferences._(preferencias);
+  }
+
+  AlmacenPreferenciasSharedPreferences._(this._preferencias);
 
   SharedPreferencesAsync? _preferencias;
 
@@ -72,15 +76,12 @@ class AlmacenPreferenciasSharedPreferences implements AlmacenPreferencias {
 /// Las claves concretas se mantienen aquí para evitar literales dispersos por
 /// las pantallas.
 class ServicioPreferenciasLocales {
-  ServicioPreferenciasLocales({
-    AlmacenPreferencias? almacen,
-  }) : _almacen =
-            almacen ?? AlmacenPreferenciasSharedPreferences();
+  ServicioPreferenciasLocales({AlmacenPreferencias? almacen})
+    : _almacen = almacen ?? AlmacenPreferenciasSharedPreferences();
 
   final AlmacenPreferencias _almacen;
 
-  static const String _claveModoApariencia =
-      'preferencias.modo_apariencia';
+  static const String _claveModoApariencia = 'preferencias.modo_apariencia';
   static const String _claveUnidadTemperatura =
       'preferencias.unidad_temperatura';
 

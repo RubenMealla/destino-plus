@@ -55,6 +55,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Crear viaje'));
     await tester.tap(find.text('Crear viaje'));
     await tester.pump();
 
@@ -68,10 +69,7 @@ void main() {
           icono: Icons.luggage_outlined,
           titulo: 'Todavía no tienes viajes',
           mensaje: 'Crea tu primer viaje para comenzar.',
-          accion: BotonAccion(
-            texto: 'Nuevo viaje',
-            onPressed: () {},
-          ),
+          accion: BotonAccion(texto: 'Nuevo viaje', onPressed: () {}),
         ),
       ),
     );

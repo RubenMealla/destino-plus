@@ -4,19 +4,18 @@ import 'package:destino_plus/app/router/router_app.dart';
 import 'package:destino_plus/app/router/rutas_app.dart';
 import 'package:destino_plus/app/theme/tema_app.dart';
 import 'package:destino_plus/features/auth/estado/estado_sesion.dart';
+import 'package:destino_plus/features/clima/estado/estado_climas_recientes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+
 
 Future<void> _probarRuta(
   WidgetTester tester, {
   required String ruta,
   required String textoEsperado,
 }) async {
-  final router = RouterApp.crear(
-    protegerRutas: false,
-    ubicacionInicial: ruta,
-  );
+  final router = RouterApp.crear(protegerRutas: false, ubicacionInicial: ruta);
 
   await tester.pumpWidget(
     MultiProvider(
@@ -29,6 +28,10 @@ Future<void> _probarRuta(
         ),
         ChangeNotifierProvider<EstadoUnidades>.value(
           value: EstadoUnidades.instancia,
+        ),
+
+        ChangeNotifierProvider<EstadoClimasRecientes>(
+          create: (_) => EstadoClimasRecientes(cargadoInicialmente: true),
         ),
       ],
       child: MaterialApp.router(
@@ -74,10 +77,6 @@ void main() {
   });
 
   testWidgets('Perfil muestra su estructura inicial', (tester) async {
-    await _probarRuta(
-      tester,
-      ruta: RutasApp.perfil,
-      textoEsperado: 'Ajustes',
-    );
+    await _probarRuta(tester, ruta: RutasApp.perfil, textoEsperado: 'Ajustes');
   });
 }

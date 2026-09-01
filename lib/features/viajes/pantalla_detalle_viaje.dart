@@ -48,14 +48,14 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
 
   void _cargar() {
     _carga = _repositorio.obtenerPorId(widget.viajeId);
-    _cargaActividades =
-        _repositorioActividades.listarPorViaje(widget.viajeId);
+    _cargaActividades = _repositorioActividades.listarPorViaje(widget.viajeId);
   }
 
   Future<void> _recargarActividades() async {
     setState(() {
-      _cargaActividades =
-          _repositorioActividades.listarPorViaje(widget.viajeId);
+      _cargaActividades = _repositorioActividades.listarPorViaje(
+        widget.viajeId,
+      );
     });
 
     await _cargaActividades;
@@ -98,15 +98,9 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
     }
   }
 
-  Future<void> _editarActividad(
-    Viaje viaje,
-    ActividadViaje actividad,
-  ) async {
+  Future<void> _editarActividad(Viaje viaje, ActividadViaje actividad) async {
     final actualizada = await context.push<bool>(
-      RutasApp.edicionActividadDeViaje(
-        widget.viajeId,
-        actividad.id,
-      ),
+      RutasApp.edicionActividadDeViaje(widget.viajeId, actividad.id),
       extra: viaje,
     );
 
@@ -118,9 +112,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Actividad actualizada correctamente.'),
-        ),
+        const SnackBar(content: Text('Actividad actualizada correctamente.')),
       );
     }
   }
@@ -128,9 +120,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
   Future<void> _cambiarCompletada(ActividadViaje actividad) async {
     try {
       await _repositorioActividades.actualizar(
-        actividad.copyWith(
-          completada: !actividad.completada,
-        ),
+        actividad.copyWith(completada: !actividad.completada),
       );
 
       if (!mounted) {
@@ -143,9 +133,8 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.mensaje)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.mensaje)));
     }
   }
 
@@ -189,17 +178,15 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Actividad eliminada.')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Actividad eliminada.')));
     } on ExcepcionActividades catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.mensaje)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.mensaje)));
     }
   }
 
@@ -247,15 +234,14 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
         return;
       }
 
-      context.pop(true);
+      Navigator.of(context).pop(true);
     } on ExcepcionViajes catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.mensaje)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.mensaje)));
     } finally {
       if (mounted) {
         setState(() {
@@ -378,8 +364,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
                     viaje: viaje,
                     carga: _cargaActividades,
                     onCrear: () => _crearActividad(viaje),
-                    onEditar: (actividad) =>
-                        _editarActividad(viaje, actividad),
+                    onEditar: (actividad) => _editarActividad(viaje, actividad),
                     onCambiarCompletada: _cambiarCompletada,
                     onEliminar: _eliminarActividad,
                     onReintentar: _recargarActividades,
@@ -394,8 +379,7 @@ class _PantallaDetalleViajeState extends State<PantallaDetalleViaje> {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed:
-                          _eliminando ? null : () => _eliminar(viaje),
+                      onPressed: _eliminando ? null : () => _eliminar(viaje),
                       icon: const Icon(Icons.delete_outline_rounded),
                       label: Text(
                         _eliminando ? 'Eliminando...' : 'Eliminar viaje',
@@ -508,8 +492,7 @@ class _SeccionActividades extends StatelessWidget {
               EstadoVacio(
                 icono: Icons.event_note_outlined,
                 titulo: 'Aún no hay actividades',
-                mensaje:
-                    'Agrega actividades para comenzar a construir tu itinerario.',
+                mensaje: 'Agrega actividades para comenzar a construir tu itinerario.',
                 accion: BotonAccion(
                   texto: 'Agregar actividad',
                   icono: Icons.add_rounded,
@@ -556,14 +539,11 @@ class _SeccionActividades extends StatelessWidget {
         ),
         for (final actividad in grupos[dia]!)
           Padding(
-            padding: const EdgeInsets.only(
-              bottom: DimensionesApp.espacio12,
-            ),
+            padding: const EdgeInsets.only(bottom: DimensionesApp.espacio12),
             child: _TarjetaActividad(
               actividad: actividad,
               onEditar: () => onEditar(actividad),
-              onCambiarCompletada: () =>
-                  onCambiarCompletada(actividad),
+              onCambiarCompletada: () => onCambiarCompletada(actividad),
               onEliminar: () => onEliminar(actividad),
             ),
           ),
@@ -646,10 +626,7 @@ class _TarjetaActividad extends StatelessWidget {
                   ),
                   if (hora != null) ...[
                     const SizedBox(height: DimensionesApp.espacio4),
-                    Text(
-                      hora,
-                      style: textTheme.bodySmall,
-                    ),
+                    Text(hora, style: textTheme.bodySmall),
                   ],
                   if (actividad.lugar?.trim().isNotEmpty == true) ...[
                     const SizedBox(height: DimensionesApp.espacio8),
@@ -657,18 +634,13 @@ class _TarjetaActividad extends StatelessWidget {
                       children: [
                         const Icon(Icons.place_outlined, size: 18),
                         const SizedBox(width: DimensionesApp.espacio8),
-                        Expanded(
-                          child: Text(actividad.lugar!.trim()),
-                        ),
+                        Expanded(child: Text(actividad.lugar!.trim())),
                       ],
                     ),
                   ],
                   if (actividad.notas?.trim().isNotEmpty == true) ...[
                     const SizedBox(height: DimensionesApp.espacio8),
-                    Text(
-                      actividad.notas!.trim(),
-                      style: textTheme.bodyMedium,
-                    ),
+                    Text(actividad.notas!.trim(), style: textTheme.bodyMedium),
                   ],
                 ],
               ),
@@ -683,14 +655,8 @@ class _TarjetaActividad extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'editar',
-                  child: Text('Editar'),
-                ),
-                PopupMenuItem(
-                  value: 'eliminar',
-                  child: Text('Eliminar'),
-                ),
+                PopupMenuItem(value: 'editar', child: Text('Editar')),
+                PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
               ],
             ),
           ],
@@ -701,10 +667,7 @@ class _TarjetaActividad extends StatelessWidget {
 }
 
 class _DatoDetalle extends StatelessWidget {
-  const _DatoDetalle({
-    required this.etiqueta,
-    required this.valor,
-  });
+  const _DatoDetalle({required this.etiqueta, required this.valor});
 
   final String etiqueta;
   final String valor;
@@ -715,16 +678,10 @@ class _DatoDetalle extends StatelessWidget {
       children: [
         SizedBox(
           width: 72,
-          child: Text(
-            etiqueta,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(etiqueta, style: Theme.of(context).textTheme.bodyMedium),
         ),
         Expanded(
-          child: Text(
-            valor,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
+          child: Text(valor, style: Theme.of(context).textTheme.bodyLarge),
         ),
       ],
     );

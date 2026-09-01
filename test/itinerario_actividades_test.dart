@@ -16,8 +16,7 @@ class _ViajesFalsos implements FuenteViajes {
   Future<List<Viaje>> listar() async => [viaje];
 
   @override
-  Future<Viaje?> obtenerPorId(String id) async =>
-      id == viaje.id ? viaje : null;
+  Future<Viaje?> obtenerPorId(String id) async => id == viaje.id ? viaje : null;
 
   @override
   Future<Viaje> crear({
@@ -26,8 +25,7 @@ class _ViajesFalsos implements FuenteViajes {
     required DateTime fechaInicio,
     required DateTime fechaFin,
     String? descripcion,
-  }) async =>
-      viaje;
+  }) async => viaje;
 
   @override
   Future<Viaje> actualizar(Viaje viaje) async => viaje;
@@ -65,9 +63,7 @@ class _ActividadesFalsas implements FuenteActividades {
 
   @override
   Future<ActividadViaje> actualizar(ActividadViaje actividad) async {
-    final index = actividades.indexWhere(
-      (item) => item.id == actividad.id,
-    );
+    final index = actividades.indexWhere((item) => item.id == actividad.id);
     actividades[index] = actividad;
     return actividad;
   }
@@ -124,11 +120,7 @@ void main() {
         fecha: DateTime(2026, 9, 10),
         hora: '20:00',
       ),
-      _actividad(
-        id: 'a3',
-        titulo: 'San Jacinto',
-        fecha: DateTime(2026, 9, 11),
-      ),
+      _actividad(id: 'a3', titulo: 'San Jacinto', fecha: DateTime(2026, 9, 11)),
     ]);
 
     await tester.pumpWidget(
@@ -150,9 +142,7 @@ void main() {
     expect(find.text('San Jacinto'), findsOneWidget);
   });
 
-  testWidgets('una actividad puede marcarse como completada', (
-    tester,
-  ) async {
+  testWidgets('una actividad puede marcarse como completada', (tester) async {
     final viaje = _viaje();
     final actividad = _actividad(
       id: 'a1',
@@ -176,6 +166,7 @@ void main() {
     final checkbox = find.byType(Checkbox);
     expect(checkbox, findsOneWidget);
 
+    await tester.ensureVisible(checkbox);
     await tester.tap(checkbox);
     await tester.pumpAndSettle();
 

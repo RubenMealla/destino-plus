@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-Widget _appDePrueba({
-  String rutaInicial = RutasApp.inicioSesion,
-}) {
+Widget _appDePrueba({String rutaInicial = RutasApp.inicioSesion}) {
   final router = RouterApp.crear(
     protegerRutas: false,
     ubicacionInicial: rutaInicial,
@@ -16,10 +14,7 @@ Widget _appDePrueba({
 
   return ChangeNotifierProvider<EstadoSesion>.value(
     value: EstadoSesion.instancia,
-    child: MaterialApp.router(
-      theme: TemaApp.claro,
-      routerConfig: router,
-    ),
+    child: MaterialApp.router(theme: TemaApp.claro, routerConfig: router),
   );
 }
 
@@ -29,13 +24,11 @@ void main() {
       await tester.pumpWidget(_appDePrueba());
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Iniciar sesión').first);
       await tester.tap(find.text('Iniciar sesión').first);
       await tester.pump();
 
-      expect(
-        find.text('Ingresa tu correo electrónico.'),
-        findsOneWidget,
-      );
+      expect(find.text('Ingresa tu correo electrónico.'), findsOneWidget);
       expect(find.text('Ingresa tu contraseña.'), findsOneWidget);
     });
 
@@ -51,6 +44,7 @@ void main() {
       await tester.enterText(campos.at(0), 'correo-invalido');
       await tester.enterText(campos.at(1), '123');
 
+      await tester.ensureVisible(find.text('Iniciar sesión').first);
       await tester.tap(find.text('Iniciar sesión').first);
       await tester.pump();
 
@@ -70,24 +64,25 @@ void main() {
       await tester.pumpWidget(_appDePrueba());
       await tester.pumpAndSettle();
 
-      var campoClave =
-          tester.widget<EditableText>(find.byType(EditableText).at(1));
+      var campoClave = tester.widget<EditableText>(
+        find.byType(EditableText).at(1),
+      );
       expect(campoClave.obscureText, isTrue);
       expect(find.byTooltip('Mostrar contraseña'), findsOneWidget);
 
+      await tester.ensureVisible(find.byTooltip('Mostrar contraseña'));
       await tester.tap(find.byTooltip('Mostrar contraseña'));
       await tester.pump();
 
-      campoClave =
-          tester.widget<EditableText>(find.byType(EditableText).at(1));
+      campoClave = tester.widget<EditableText>(find.byType(EditableText).at(1));
       expect(campoClave.obscureText, isFalse);
       expect(find.byTooltip('Ocultar contraseña'), findsOneWidget);
 
+      await tester.ensureVisible(find.byTooltip('Ocultar contraseña'));
       await tester.tap(find.byTooltip('Ocultar contraseña'));
       await tester.pump();
 
-      campoClave =
-          tester.widget<EditableText>(find.byType(EditableText).at(1));
+      campoClave = tester.widget<EditableText>(find.byType(EditableText).at(1));
       expect(campoClave.obscureText, isTrue);
     });
 
@@ -95,6 +90,7 @@ void main() {
       await tester.pumpWidget(_appDePrueba());
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Crear cuenta'));
       await tester.tap(find.text('Crear cuenta'));
       await tester.pumpAndSettle();
 
@@ -105,22 +101,16 @@ void main() {
   });
 
   group('Registro', () {
-    testWidgets('valida todos los campos obligatorios vacíos', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _appDePrueba(rutaInicial: RutasApp.registro),
-      );
+    testWidgets('valida todos los campos obligatorios vacíos', (tester) async {
+      await tester.pumpWidget(_appDePrueba(rutaInicial: RutasApp.registro));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Crear cuenta').first);
       await tester.tap(find.text('Crear cuenta').first);
       await tester.pump();
 
       expect(find.text('Ingresa tu nombre.'), findsOneWidget);
-      expect(
-        find.text('Ingresa tu correo electrónico.'),
-        findsOneWidget,
-      );
+      expect(find.text('Ingresa tu correo electrónico.'), findsOneWidget);
       expect(find.text('Ingresa una contraseña.'), findsOneWidget);
       expect(find.text('Confirma tu contraseña.'), findsOneWidget);
     });
@@ -128,9 +118,7 @@ void main() {
     testWidgets('valida nombre corto correo inválido y contraseña corta', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _appDePrueba(rutaInicial: RutasApp.registro),
-      );
+      await tester.pumpWidget(_appDePrueba(rutaInicial: RutasApp.registro));
       await tester.pumpAndSettle();
 
       final campos = find.byType(TextFormField);
@@ -141,6 +129,7 @@ void main() {
       await tester.enterText(campos.at(2), '123');
       await tester.enterText(campos.at(3), '123');
 
+      await tester.ensureVisible(find.text('Crear cuenta').first);
       await tester.tap(find.text('Crear cuenta').first);
       await tester.pump();
 
@@ -159,9 +148,7 @@ void main() {
     });
 
     testWidgets('detecta contraseñas diferentes', (tester) async {
-      await tester.pumpWidget(
-        _appDePrueba(rutaInicial: RutasApp.registro),
-      );
+      await tester.pumpWidget(_appDePrueba(rutaInicial: RutasApp.registro));
       await tester.pumpAndSettle();
 
       final campos = find.byType(TextFormField);
@@ -171,25 +158,22 @@ void main() {
       await tester.enterText(campos.at(2), '123456');
       await tester.enterText(campos.at(3), '654321');
 
+      await tester.ensureVisible(find.text('Crear cuenta').first);
       await tester.tap(find.text('Crear cuenta').first);
       await tester.pump();
 
-      expect(
-        find.text('Las contraseñas no coinciden.'),
-        findsOneWidget,
-      );
+      expect(find.text('Las contraseñas no coinciden.'), findsOneWidget);
     });
 
     testWidgets('puede volver desde registro al inicio de sesión', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _appDePrueba(rutaInicial: RutasApp.registro),
-      );
+      await tester.pumpWidget(_appDePrueba(rutaInicial: RutasApp.registro));
       await tester.pumpAndSettle();
 
       expect(find.text('Crea tu cuenta'), findsOneWidget);
 
+      await tester.ensureVisible(find.byTooltip('Volver'));
       await tester.tap(find.byTooltip('Volver'));
       await tester.pumpAndSettle();
 

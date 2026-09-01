@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FuenteActividadesFalsa implements FuenteActividades {
   _FuenteActividadesFalsa([List<ActividadViaje>? iniciales])
-      : actividades = [...?iniciales];
+    : actividades = [...?iniciales];
 
   final List<ActividadViaje> actividades;
 
@@ -43,8 +43,9 @@ class _FuenteActividadesFalsa implements FuenteActividades {
       viajeId: viajeId,
       titulo: titulo.trim(),
       fecha: fecha,
-      horaInicio:
-          horaInicio?.trim().isEmpty == true ? null : horaInicio?.trim(),
+      horaInicio: horaInicio?.trim().isEmpty == true
+          ? null
+          : horaInicio?.trim(),
       lugar: lugar?.trim().isEmpty == true ? null : lugar?.trim(),
       notas: notas?.trim().isEmpty == true ? null : notas?.trim(),
       completada: false,
@@ -58,9 +59,7 @@ class _FuenteActividadesFalsa implements FuenteActividades {
 
   @override
   Future<ActividadViaje> actualizar(ActividadViaje actividad) async {
-    final indice = actividades.indexWhere(
-      (item) => item.id == actividad.id,
-    );
+    final indice = actividades.indexWhere((item) => item.id == actividad.id);
 
     if (indice >= 0) {
       actividades[indice] = actividad;
@@ -91,6 +90,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Guardar actividad'));
     await tester.tap(find.text('Guardar actividad'));
     await tester.pump();
 
@@ -122,11 +122,16 @@ void main() {
     final campos = find.byType(TextFormField);
 
     await tester.enterText(campos.at(0), 'Visitar San Jacinto');
-    await tester.enterText(campos.at(1), '11/09/2026');
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-actividad')))
+            .controller!
+            .text =
+        '11/09/2026';
     await tester.enterText(campos.at(2), '09:30');
     await tester.enterText(campos.at(3), 'San Jacinto');
     await tester.enterText(campos.at(4), 'Llevar agua');
 
+    await tester.ensureVisible(find.text('Guardar actividad'));
     await tester.tap(find.text('Guardar actividad'));
     await tester.pumpAndSettle();
 

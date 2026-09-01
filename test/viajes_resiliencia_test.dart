@@ -16,9 +16,7 @@ class _FuenteViajesControlada implements FuenteViajes {
     llamadasListar += 1;
 
     if (fallarPrimerListado && llamadasListar == 1) {
-      throw const ExcepcionViajes(
-        'Error temporal de conexión.',
-      );
+      throw const ExcepcionViajes('Error temporal de conexión.');
     }
 
     return List.unmodifiable(viajes);
@@ -39,8 +37,9 @@ class _FuenteViajesControlada implements FuenteViajes {
       destino: destino.trim(),
       fechaInicio: fechaInicio,
       fechaFin: fechaFin,
-      descripcion:
-          descripcion?.trim().isEmpty == true ? null : descripcion?.trim(),
+      descripcion: descripcion?.trim().isEmpty == true
+          ? null
+          : descripcion?.trim(),
       creadoEn: DateTime.utc(2026, 8, 31),
       actualizadoEn: DateTime.utc(2026, 8, 31),
     );
@@ -89,6 +88,7 @@ void main() {
           onGenerateRoute: (_) => MaterialPageRoute<bool>(
             builder: (_) => PantallaFormularioViaje(
               repositorio: fuente,
+              fechaActual: DateTime(2026, 9, 1),
             ),
           ),
         ),
@@ -101,10 +101,19 @@ void main() {
 
     await tester.enterText(campos.at(0), 'Escapada de septiembre');
     await tester.enterText(campos.at(1), 'Tarija, Bolivia');
-    await tester.enterText(campos.at(2), '10/09/2026');
-    await tester.enterText(campos.at(3), '15/09/2026');
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-inicio-viaje')))
+            .controller!
+            .text =
+        '10/09/2026';
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-fin-viaje')))
+            .controller!
+            .text =
+        '15/09/2026';
     await tester.enterText(campos.at(4), 'Viaje de prueba');
 
+    await tester.ensureVisible(find.text('Guardar viaje'));
     await tester.tap(find.text('Guardar viaje'));
     await tester.pumpAndSettle();
 
@@ -128,6 +137,7 @@ void main() {
         theme: TemaApp.claro,
         home: PantallaFormularioViaje(
           repositorio: fuente,
+          fechaActual: DateTime(2026, 9, 1),
         ),
       ),
     );
@@ -137,17 +147,24 @@ void main() {
 
     await tester.enterText(campos.at(0), 'Viaje');
     await tester.enterText(campos.at(1), 'Tarija');
-    await tester.enterText(campos.at(2), '15/09/2026');
-    await tester.enterText(campos.at(3), '10/09/2026');
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-inicio-viaje')))
+            .controller!
+            .text =
+        '15/09/2026';
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-fin-viaje')))
+            .controller!
+            .text =
+        '10/09/2026';
 
+    await tester.ensureVisible(find.text('Guardar viaje'));
     await tester.tap(find.text('Guardar viaje'));
     await tester.pumpAndSettle();
 
     expect(fuente.viajes, isEmpty);
     expect(
-      find.text(
-        'La fecha de fin no puede ser anterior a la fecha de inicio.',
-      ),
+      find.text('La fecha de fin no puede ser anterior a la fecha de inicio.'),
       findsOneWidget,
     );
   });
@@ -173,20 +190,16 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: TemaApp.claro,
-        home: PantallaViajes(
-          repositorio: fuente,
-        ),
+        home: PantallaViajes(repositorio: fuente),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('No pudimos cargar tus viajes'),
-      findsOneWidget,
-    );
+    expect(find.text('No pudimos cargar tus viajes'), findsOneWidget);
     expect(find.text('Error temporal de conexión.'), findsOneWidget);
     expect(fuente.llamadasListar, 1);
 
+    await tester.ensureVisible(find.text('Reintentar'));
     await tester.tap(find.text('Reintentar'));
     await tester.pumpAndSettle();
 

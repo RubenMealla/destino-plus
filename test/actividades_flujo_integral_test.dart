@@ -41,7 +41,7 @@ class _ViajesFalsos implements FuenteViajes {
 
 class _ActividadesFalsas implements FuenteActividades {
   _ActividadesFalsas([List<ActividadViaje>? iniciales])
-      : actividades = [...?iniciales];
+    : actividades = [...?iniciales];
 
   final List<ActividadViaje> actividades;
   int creaciones = 0;
@@ -81,8 +81,9 @@ class _ActividadesFalsas implements FuenteActividades {
       viajeId: viajeId,
       titulo: titulo.trim(),
       fecha: fecha,
-      horaInicio:
-          horaInicio?.trim().isEmpty == true ? null : horaInicio?.trim(),
+      horaInicio: horaInicio?.trim().isEmpty == true
+          ? null
+          : horaInicio?.trim(),
       lugar: lugar?.trim().isEmpty == true ? null : lugar?.trim(),
       notas: notas?.trim().isEmpty == true ? null : notas?.trim(),
       completada: false,
@@ -98,9 +99,7 @@ class _ActividadesFalsas implements FuenteActividades {
   Future<ActividadViaje> actualizar(ActividadViaje actividad) async {
     actualizaciones += 1;
 
-    final indice = actividades.indexWhere(
-      (item) => item.id == actividad.id,
-    );
+    final indice = actividades.indexWhere((item) => item.id == actividad.id);
 
     if (indice >= 0) {
       actividades[indice] = actividad;
@@ -166,24 +165,25 @@ void main() {
     final campos = find.byType(TextFormField);
 
     await tester.enterText(campos.at(0), 'Actividad fuera del viaje');
-    await tester.enterText(campos.at(1), '09/09/2026');
+    tester
+            .widget<TextFormField>(find.byKey(const Key('fecha-actividad')))
+            .controller!
+            .text =
+        '09/09/2026';
 
+    await tester.ensureVisible(find.text('Guardar actividad'));
     await tester.tap(find.text('Guardar actividad'));
     await tester.pumpAndSettle();
 
     expect(actividades.creaciones, 0);
     expect(actividades.actividades, isEmpty);
     expect(
-      find.text(
-        'La actividad debe estar entre 10/09/2026 y 15/09/2026.',
-      ),
+      find.text('La actividad debe estar entre 10/09/2026 y 15/09/2026.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('los días inicial y final del viaje son válidos', (
-    tester,
-  ) async {
+  testWidgets('los días inicial y final del viaje son válidos', (tester) async {
     final viaje = _viaje();
     final actividades = _ActividadesFalsas();
 
@@ -192,6 +192,7 @@ void main() {
         MaterialApp(
           theme: TemaApp.claro,
           home: Navigator(
+            key: UniqueKey(),
             onGenerateRoute: (_) => MaterialPageRoute<bool>(
               builder: (_) => PantallaFormularioActividad(
                 viajeId: viaje.id,
@@ -206,8 +207,13 @@ void main() {
 
       final campos = find.byType(TextFormField);
       await tester.enterText(campos.at(0), 'Actividad válida');
-      await tester.enterText(campos.at(1), fecha);
+      tester
+              .widget<TextFormField>(find.byKey(const Key('fecha-actividad')))
+              .controller!
+              .text =
+          fecha;
 
+      await tester.ensureVisible(find.text('Guardar actividad'));
       await tester.tap(find.text('Guardar actividad'));
       await tester.pumpAndSettle();
     }
@@ -218,10 +224,7 @@ void main() {
     expect(actividades.creaciones, 2);
     expect(
       actividades.actividades.map((actividad) => actividad.fecha),
-      containsAll([
-        DateTime(2026, 9, 10),
-        DateTime(2026, 9, 15),
-      ]),
+      containsAll([DateTime(2026, 9, 10), DateTime(2026, 9, 15)]),
     );
   });
 
@@ -245,11 +248,9 @@ void main() {
 
     var checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
     expect(checkbox.value, isFalse);
-    expect(
-      find.byTooltip('Marcar como completada'),
-      findsOneWidget,
-    );
+    expect(find.byTooltip('Marcar como completada'), findsOneWidget);
 
+    await tester.ensureVisible(find.byType(Checkbox));
     await tester.tap(find.byType(Checkbox));
     await tester.pumpAndSettle();
 
@@ -258,10 +259,7 @@ void main() {
 
     checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
     expect(checkbox.value, isTrue);
-    expect(
-      find.byTooltip('Marcar como pendiente'),
-      findsOneWidget,
-    );
+    expect(find.byTooltip('Marcar como pendiente'), findsOneWidget);
   });
 
   testWidgets('eliminar actividad exige confirmar y actualiza el itinerario', (
@@ -284,17 +282,17 @@ void main() {
 
     expect(find.text('Cena en el centro'), findsOneWidget);
 
+    await tester.ensureVisible(find.byTooltip('Opciones de actividad'));
     await tester.tap(find.byTooltip('Opciones de actividad'));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Eliminar').last);
     await tester.tap(find.text('Eliminar').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Eliminar actividad'), findsOneWidget);
     expect(
-      find.textContaining(
-        '¿Seguro que deseas eliminar "Cena en el centro"',
-      ),
+      find.textContaining('¿Seguro que deseas eliminar "Cena en el centro"'),
       findsOneWidget,
     );
     expect(actividades.eliminaciones, 0);
@@ -302,6 +300,7 @@ void main() {
     final confirmar = find.widgetWithText(FilledButton, 'Eliminar');
     expect(confirmar, findsOneWidget);
 
+    await tester.ensureVisible(confirmar);
     await tester.tap(confirmar);
     await tester.pumpAndSettle();
 

@@ -54,7 +54,6 @@ class _AlmacenPreferenciasFalso implements AlmacenPreferencias {
   }
 }
 
-
 class _ClimaUbicacionFalso implements FuenteClimaUbicacionActual {
   const _ClimaUbicacionFalso(this.resultado);
 
@@ -64,8 +63,7 @@ class _ClimaUbicacionFalso implements FuenteClimaUbicacionActual {
   Future<ClimaUbicacionActual> consultar() async => resultado;
 }
 
-class _AccionesConfiguracionFalsas
-    implements AccionesConfiguracionUbicacion {
+class _AccionesConfiguracionFalsas implements AccionesConfiguracionUbicacion {
   const _AccionesConfiguracionFalsas();
 
   @override
@@ -127,11 +125,10 @@ void main() {
     'un resultado ya cargado cambia de Celsius a Fahrenheit sin repetir API',
     (tester) async {
       final almacen = _AlmacenPreferenciasFalso();
-      final servicioPreferencias =
-          ServicioPreferenciasLocales(almacen: almacen);
-      final unidades = EstadoUnidades(
-        servicio: servicioPreferencias,
+      final servicioPreferencias = ServicioPreferenciasLocales(
+        almacen: almacen,
       );
+      final unidades = EstadoUnidades(servicio: servicioPreferencias);
       await unidades.cargar();
 
       var consultas = 0;
@@ -151,8 +148,7 @@ void main() {
             theme: TemaApp.claro,
             home: PantallaExplorar(
               servicioClima: servicioClima,
-              servicioClimaUbicacion:
-                  _ClimaUbicacionFalso(_climaUbicacion()),
+              servicioClimaUbicacion: _ClimaUbicacionFalso(_climaUbicacion()),
               accionesConfiguracionUbicacion:
                   const _AccionesConfiguracionFalsas(),
             ),
@@ -160,10 +156,8 @@ void main() {
         ),
       );
 
-      await tester.enterText(
-        find.byType(TextField),
-        'Tarija, Bolivia',
-      );
+      await tester.enterText(find.byType(TextField), 'Tarija, Bolivia');
+      await tester.ensureVisible(find.text('Consultar clima'));
       await tester.tap(find.text('Consultar clima'));
       await tester.pumpAndSettle();
 
@@ -171,27 +165,20 @@ void main() {
       expect(find.text('20 °C'), findsOneWidget);
       expect(find.text('18 °C'), findsOneWidget);
 
-      await unidades.cambiarTemperatura(
-        UnidadTemperatura.fahrenheit,
-      );
+      await unidades.cambiarTemperatura(UnidadTemperatura.fahrenheit);
       await tester.pumpAndSettle();
 
       expect(consultas, 1);
       expect(find.text('68 °F'), findsOneWidget);
       expect(find.text('64 °F'), findsOneWidget);
       expect(find.textContaining('77° / 50° F'), findsOneWidget);
-      expect(
-        await servicioPreferencias.leerUnidadTemperatura(),
-        'fahrenheit',
-      );
+      expect(await servicioPreferencias.leerUnidadTemperatura(), 'fahrenheit');
     },
   );
 }
 
 class _FuenteClimaContador implements FuenteClimaDestino {
-  const _FuenteClimaContador({
-    required this.onConsultar,
-  });
+  const _FuenteClimaContador({required this.onConsultar});
 
   final ClimaDestino Function() onConsultar;
 

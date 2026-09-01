@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:destino_plus/app/preferencias/estado_unidades.dart';
 import 'package:destino_plus/app/preferencias/servicio_preferencias_locales.dart';
+import 'package:destino_plus/features/clima/estado/estado_climas_recientes.dart';
 import 'package:destino_plus/app/theme/tema_app.dart';
 import 'package:destino_plus/features/clima/modelos/pronostico_clima.dart';
 import 'package:destino_plus/features/clima/modelos/ubicacion_clima.dart';
@@ -93,10 +94,7 @@ class _ServicioClimaFalso implements FuenteClimaDestino {
 }
 
 class _ServicioUbicacionFalso implements FuenteClimaUbicacionActual {
-  _ServicioUbicacionFalso({
-    this.resultado,
-    this.error,
-  });
+  _ServicioUbicacionFalso({this.resultado, this.error});
 
   final ClimaUbicacionActual? resultado;
   final Object? error;
@@ -114,8 +112,7 @@ class _ServicioUbicacionFalso implements FuenteClimaUbicacionActual {
   }
 }
 
-class _AccionesUbicacionFalsas
-    implements AccionesConfiguracionUbicacion {
+class _AccionesUbicacionFalsas implements AccionesConfiguracionUbicacion {
   bool configuracionAplicacionAbierta = false;
   bool configuracionUbicacionAbierta = false;
 
@@ -132,9 +129,7 @@ class _AccionesUbicacionFalsas
   }
 }
 
-ClimaDestino _resultado({
-  String nombre = 'Tarija, Bolivia',
-}) {
+ClimaDestino _resultado({String nombre = 'Tarija, Bolivia'}) {
   return ClimaDestino(
     consulta: nombre,
     ubicacion: UbicacionClima(
@@ -184,9 +179,7 @@ Future<EstadoUnidades> _unidades({
   UnidadTemperatura unidad = UnidadTemperatura.celsius,
 }) async {
   final estado = EstadoUnidades(
-    servicio: ServicioPreferenciasLocales(
-      almacen: _AlmacenPreferenciasFalso(),
-    ),
+    servicio: ServicioPreferenciasLocales(almacen: _AlmacenPreferenciasFalso()),
   );
   await estado.cargar();
 
@@ -203,17 +196,20 @@ Widget _app({
   FuenteClimaUbicacionActual? servicioUbicacion,
   AccionesConfiguracionUbicacion? accionesUbicacion,
 }) {
-  return ChangeNotifierProvider<EstadoUnidades>.value(
-    value: unidades,
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<EstadoUnidades>.value(value: unidades),
+      ChangeNotifierProvider<EstadoClimasRecientes>(
+        create: (_) => EstadoClimasRecientes(cargadoInicialmente: true),
+      ),
+    ],
     child: MaterialApp(
       theme: TemaApp.claro,
       home: PantallaExplorar(
         servicioClima: servicio,
         servicioClimaUbicacion:
             servicioUbicacion ??
-            _ServicioUbicacionFalso(
-              resultado: _resultadoUbicacionActual(),
-            ),
+            _ServicioUbicacionFalso(resultado: _resultadoUbicacionActual()),
         accionesConfiguracionUbicacion:
             accionesUbicacion ?? _AccionesUbicacionFalsas(),
       ),
@@ -226,43 +222,27 @@ void main() {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
     await tester.pumpWidget(
-      _app(
-        servicio: servicio,
-        unidades: await _unidades(),
-      ),
+      _app(servicio: servicio, unidades: await _unidades()),
     );
 
-    expect(
-      find.text('Explora el clima de tu próximo destino'),
-      findsOneWidget,
-    );
+    expect(find.text('Explora el clima de tu próximo destino'), findsOneWidget);
     expect(find.text('Consultar clima'), findsOneWidget);
     expect(find.text('Usar mi ubicación'), findsOneWidget);
   });
 
   testWidgets('muestra loading mientras espera la API', (tester) async {
-    final servicio = _ServicioClimaFalso(
-      completarManualmente: true,
-    );
+    final servicio = _ServicioClimaFalso(completarManualmente: true);
 
     await tester.pumpWidget(
-      _app(
-        servicio: servicio,
-        unidades: await _unidades(),
-      ),
+      _app(servicio: servicio, unidades: await _unidades()),
     );
 
-    await tester.enterText(
-      find.byType(TextField),
-      'Tarija, Bolivia',
-    );
+    await tester.enterText(find.byType(TextField), 'Tarija, Bolivia');
+    await tester.ensureVisible(find.text('Consultar clima'));
     await tester.tap(find.text('Consultar clima'));
     await tester.pump();
 
-    expect(
-      find.text('Buscando ubicación y pronóstico...'),
-      findsOneWidget,
-    );
+    expect(find.text('Buscando ubicación y pronóstico...'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     servicio.completar(_resultado());
@@ -275,16 +255,11 @@ void main() {
     final servicio = _ServicioClimaFalso(resultado: _resultado());
 
     await tester.pumpWidget(
-      _app(
-        servicio: servicio,
-        unidades: await _unidades(),
-      ),
+      _app(servicio: servicio, unidades: await _unidades()),
     );
 
-    await tester.enterText(
-      find.byType(TextField),
-      'Tarija, Bolivia',
-    );
+    await tester.enterText(find.byType(TextField), 'Tarija, Bolivia');
+    await tester.ensureVisible(find.text('Consultar clima'));
     await tester.tap(find.text('Consultar clima'));
     await tester.pumpAndSettle();
 
@@ -304,16 +279,12 @@ void main() {
     await tester.pumpWidget(
       _app(
         servicio: servicio,
-        unidades: await _unidades(
-          unidad: UnidadTemperatura.fahrenheit,
-        ),
+        unidades: await _unidades(unidad: UnidadTemperatura.fahrenheit),
       ),
     );
 
-    await tester.enterText(
-      find.byType(TextField),
-      'Tarija, Bolivia',
-    );
+    await tester.enterText(find.byType(TextField), 'Tarija, Bolivia');
+    await tester.ensureVisible(find.text('Consultar clima'));
     await tester.tap(find.text('Consultar clima'));
     await tester.pumpAndSettle();
 
@@ -336,6 +307,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.tap(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
 
@@ -348,30 +320,21 @@ void main() {
     expect(find.text('21 °C'), findsOneWidget);
   });
 
-  testWidgets('error manual mantiene el reintento de búsqueda', (
-    tester,
-  ) async {
+  testWidgets('error manual mantiene el reintento de búsqueda', (tester) async {
     final servicio = _ServicioClimaFalso(
-      error: const ExcepcionClima(
-        'No encontramos una ubicación para "X".',
-      ),
+      error: const ExcepcionClima('No encontramos una ubicación para "X".'),
     );
 
     await tester.pumpWidget(
-      _app(
-        servicio: servicio,
-        unidades: await _unidades(),
-      ),
+      _app(servicio: servicio, unidades: await _unidades()),
     );
 
     await tester.enterText(find.byType(TextField), 'Xx');
+    await tester.ensureVisible(find.text('Consultar clima'));
     await tester.tap(find.text('Consultar clima'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('No pudimos obtener el clima'),
-      findsOneWidget,
-    );
+    expect(find.text('No pudimos obtener el clima'), findsOneWidget);
     expect(find.text('Reintentar búsqueda'), findsOneWidget);
   });
 
@@ -382,8 +345,7 @@ void main() {
     final ubicacion = _ServicioUbicacionFalso(
       error: const ExcepcionUbicacion(
         tipo: TipoErrorUbicacion.permisoDenegadoPermanentemente,
-        mensaje:
-            'El permiso de ubicación está bloqueado.',
+        mensaje: 'El permiso de ubicación está bloqueado.',
       ),
     );
 
@@ -396,18 +358,14 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.tap(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('No pudimos usar tu ubicación'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Abrir configuración de la app'),
-      findsOneWidget,
-    );
+    expect(find.text('No pudimos usar tu ubicación'), findsOneWidget);
+    expect(find.text('Abrir configuración de la app'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Abrir configuración de la app'));
     await tester.tap(find.text('Abrir configuración de la app'));
     await tester.pump();
 
@@ -421,8 +379,7 @@ void main() {
     final ubicacion = _ServicioUbicacionFalso(
       error: const ExcepcionUbicacion(
         tipo: TipoErrorUbicacion.servicioDeshabilitado,
-        mensaje:
-            'La ubicación del dispositivo está desactivada.',
+        mensaje: 'La ubicación del dispositivo está desactivada.',
       ),
     );
 
@@ -435,30 +392,24 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.tap(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Abrir configuración de ubicación'),
-      findsOneWidget,
-    );
+    expect(find.text('Abrir configuración de ubicación'), findsOneWidget);
 
-    await tester.tap(
-      find.text('Abrir configuración de ubicación'),
-    );
+    await tester.ensureVisible(find.text('Abrir configuración de ubicación'));
+    await tester.tap(find.text('Abrir configuración de ubicación'));
     await tester.pump();
 
     expect(acciones.configuracionUbicacionAbierta, isTrue);
   });
 
-  testWidgets('permiso denegado permite volver a solicitarlo', (
-    tester,
-  ) async {
+  testWidgets('permiso denegado permite volver a solicitarlo', (tester) async {
     final ubicacion = _ServicioUbicacionFalso(
       error: const ExcepcionUbicacion(
         tipo: TipoErrorUbicacion.permisoDenegado,
-        mensaje:
-            'Necesitamos permiso de ubicación para continuar.',
+        mensaje: 'Necesitamos permiso de ubicación para continuar.',
       ),
     );
 
@@ -470,6 +421,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Usar mi ubicación'));
     await tester.tap(find.text('Usar mi ubicación'));
     await tester.pumpAndSettle();
 

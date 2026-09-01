@@ -22,7 +22,7 @@ class EstadoVacio extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(
         vertical: DimensionesApp.espacio32,
         horizontal: DimensionesApp.espacio20,

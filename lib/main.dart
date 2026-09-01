@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 
 import 'app/config/configuracion_supabase.dart';
 import 'app/destino_plus_app.dart';
+import 'features/clima/estado/estado_climas_recientes.dart';
 import 'app/monitoreo/configuracion_monitoreo.dart';
 import 'app/monitoreo/inicializador_monitoreo.dart';
 import 'app/preferencias/estado_apariencia.dart';
 import 'app/preferencias/estado_unidades.dart';
 
 Future<void> main() async {
-  final configuracionMonitoreo =
-      ConfiguracionMonitoreo.desdeEntorno();
+  final configuracionMonitoreo = ConfiguracionMonitoreo.desdeEntorno();
 
-  await InicializadorMonitoreo(
-    configuracion: configuracionMonitoreo,
-  ).iniciar(_iniciarAplicacion);
+  await InicializadorMonitoreo(configuracion: configuracionMonitoreo)
+      .iniciar(_iniciarAplicacion);
 }
 
 Future<void> _iniciarAplicacion() async {
@@ -26,6 +25,7 @@ Future<void> _iniciarAplicacion() async {
   await ConfiguracionSupabase.inicializar();
   await EstadoApariencia.instancia.cargar();
   await EstadoUnidades.instancia.cargar();
+  await EstadoClimasRecientes.instancia.cargar();
 
   runApp(const DestinoPlusApp());
 }

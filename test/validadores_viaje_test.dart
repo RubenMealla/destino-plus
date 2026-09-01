@@ -27,10 +27,7 @@ void main() {
     });
 
     test('convierte fecha válida', () {
-      expect(
-        ValidadoresViaje.parsearFecha('05/09/2026'),
-        DateTime(2026, 9, 5),
-      );
+      expect(ValidadoresViaje.parsearFecha('05/09/2026'), DateTime(2026, 9, 5));
     });
 
     test('rechaza fecha final anterior a la inicial', () {
@@ -50,6 +47,35 @@ void main() {
           DateTime(2026, 9, 10),
         ),
         isNull,
+      );
+    });
+
+    test('nuevo viaje no puede comenzar antes de hoy', () {
+      expect(
+        ValidadoresViaje.fechaInicioPermitida(
+          DateTime(2026, 8, 31),
+          hoy: DateTime(2026, 9, 1),
+        ),
+        'La fecha de inicio no puede ser anterior a hoy.',
+      );
+    });
+
+    test('edición conserva una fecha histórica original', () {
+      expect(
+        ValidadoresViaje.fechaInicioPermitida(
+          DateTime(2026, 8, 20),
+          hoy: DateTime(2026, 9, 1),
+          inicioOriginal: DateTime(2026, 8, 20),
+        ),
+        isNull,
+      );
+      expect(
+        ValidadoresViaje.fechaInicioPermitida(
+          DateTime(2026, 8, 19),
+          hoy: DateTime(2026, 9, 1),
+          inicioOriginal: DateTime(2026, 8, 20),
+        ),
+        'La fecha de inicio no puede ser anterior a 20/08/2026.',
       );
     });
   });

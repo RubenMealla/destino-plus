@@ -9,17 +9,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import 'package:destino_plus/features/clima/estado/estado_climas_recientes.dart';
+
 Widget _appConRouter(GoRouter router) {
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<EstadoSesion>.value(
-        value: EstadoSesion.instancia,
-      ),
+      ChangeNotifierProvider<EstadoSesion>.value(value: EstadoSesion.instancia),
       ChangeNotifierProvider<EstadoApariencia>.value(
         value: EstadoApariencia.instancia,
       ),
       ChangeNotifierProvider<EstadoUnidades>.value(
         value: EstadoUnidades.instancia,
+      ),
+      ChangeNotifierProvider<EstadoClimasRecientes>(
+        create: (_) => EstadoClimasRecientes(cargadoInicialmente: true),
       ),
     ],
     child: MaterialApp.router(
@@ -45,18 +48,22 @@ void main() {
     expect(find.text('Planifica tu próximo viaje'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Viajes'));
     await tester.tap(find.text('Viajes'));
     await tester.pumpAndSettle();
     expect(find.text('Organiza tus viajes'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Explorar'));
     await tester.tap(find.text('Explorar'));
     await tester.pumpAndSettle();
     expect(find.text('Clima del destino'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Perfil'));
     await tester.tap(find.text('Perfil'));
     await tester.pumpAndSettle();
     expect(find.text('Ajustes'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Inicio'));
     await tester.tap(find.text('Inicio'));
     await tester.pumpAndSettle();
     expect(find.text('Planifica tu próximo viaje'), findsOneWidget);

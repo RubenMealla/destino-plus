@@ -7,11 +7,14 @@ import '../../shared/widgets/boton_accion.dart';
 import '../../shared/widgets/contenido_adaptable.dart';
 import '../../shared/widgets/estado_vacio.dart';
 import '../../shared/widgets/tarjeta_informativa.dart';
+import '../clima/estado/estado_climas_recientes.dart';
 import '../clima/modelos/pronostico_clima.dart';
+import '../clima/modelos/ubicacion_clima.dart';
 import '../clima/presentacion/clima_visual.dart';
 import '../clima/servicios/cliente_open_meteo.dart';
 import '../clima/servicios/servicio_clima_destino.dart';
 import '../clima/servicios/servicio_clima_ubicacion_actual.dart';
+import '../clima/widgets/selector_destino.dart';
 import '../ubicacion/modelos/ubicacion_actual.dart';
 import '../ubicacion/servicios/acciones_configuracion_ubicacion.dart';
 
@@ -20,14 +23,17 @@ class PantallaExplorar extends StatefulWidget {
   const PantallaExplorar({
     super.key,
     this.servicioClima,
+    this.servicioClimaCoordenadas,
+    this.fuenteUbicaciones,
     this.servicioClimaUbicacion,
     this.accionesConfiguracionUbicacion,
   });
 
   final FuenteClimaDestino? servicioClima;
+  final FuenteClimaCoordenadas? servicioClimaCoordenadas;
+  final FuenteBusquedaUbicaciones? fuenteUbicaciones;
   final FuenteClimaUbicacionActual? servicioClimaUbicacion;
-  final AccionesConfiguracionUbicacion?
-      accionesConfiguracionUbicacion;
+  final AccionesConfiguracionUbicacion? accionesConfiguracionUbicacion;
 
   @override
   State<PantallaExplorar> createState() => _PantallaExplorarState();
@@ -35,8 +41,10 @@ class PantallaExplorar extends StatefulWidget {
 
 class _PantallaExplorarState extends State<PantallaExplorar> {
   final _destinoController = TextEditingController();
+  late final ServicioClimaDestino _servicioPredeterminado;
 
   ClimaDestino? _resultado;
+  UbicacionClima? _destinoSeleccionado;
   String? _error;
   TipoErrorUbicacion? _tipoErrorUbicacion;
   double? _precisionUbicacionMetros;
@@ -45,7 +53,21 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   String _mensajeCarga = 'Buscando ubicación y pronóstico...';
 
   FuenteClimaDestino get _servicio =>
-      widget.servicioClima ?? ServicioClimaDestino();
+      widget.servicioClima ?? _servicioPredeterminado;
+
+  FuenteClimaCoordenadas? get _servicioCoordenadas {
+    if (widget.servicioClimaCoordenadas != null) {
+      return widget.servicioClimaCoordenadas;
+    }
+
+    final servicio = _servicio;
+
+    if (servicio is FuenteClimaCoordenadas) {
+      return servicio as FuenteClimaCoordenadas;
+    }
+
+    return null;
+  }
 
   FuenteClimaUbicacionActual get _servicioUbicacion =>
       widget.servicioClimaUbicacion ?? ServicioClimaUbicacionActual();
@@ -54,10 +76,31 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
       widget.accionesConfiguracionUbicacion ??
       const AccionesConfiguracionUbicacionGeolocator();
 
+  bool get _habilitarAutocompletado =>
+      widget.fuenteUbicaciones != null || widget.servicioClima == null;
+
+  @override
+  void initState() {
+    super.initState();
+    _servicioPredeterminado = ServicioClimaDestino();
+  }
+
   @override
   void dispose() {
     _destinoController.dispose();
     super.dispose();
+  }
+
+  void _destinoCambio(String valor) {
+    final seleccion = _destinoSeleccionado;
+
+    if (seleccion != null && seleccion.nombreCompleto.trim() != valor.trim()) {
+      _destinoSeleccionado = null;
+    }
+  }
+
+  void _seleccionarDestino(UbicacionClima ubicacion) {
+    _destinoSeleccionado = ubicacion;
   }
 
   Future<void> _consultar() async {
@@ -79,7 +122,25 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     _iniciarCarga('Buscando ubicación y pronóstico...');
 
     try {
-      final resultado = await _servicio.consultar(destino);
+      final seleccion = _destinoSeleccionado;
+      final servicioCoordenadas = _servicioCoordenadas;
+
+      final resultado =
+          seleccion != null &&
+              seleccion.nombreCompleto.trim() == destino &&
+              servicioCoordenadas != null
+          ? await servicioCoordenadas.consultarCoordenadas(
+              latitud: seleccion.latitud,
+              longitud: seleccion.longitud,
+              nombre: seleccion.nombreCompleto,
+            )
+          : await _servicio.consultar(destino);
+
+      if (!mounted) {
+        return;
+      }
+
+      await EstadoClimasRecientes.instancia.registrar(resultado);
 
       if (!mounted) {
         return;
@@ -91,9 +152,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     } on ExcepcionClima catch (error) {
       _mostrarError(error.mensaje);
     } catch (_) {
-      _mostrarError(
-        'No fue posible consultar el clima en este momento.',
-      );
+      _mostrarError('No fue posible consultar el clima en este momento.');
     } finally {
       _finalizarCarga();
     }
@@ -114,22 +173,22 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
         return;
       }
 
+      await context.read<EstadoClimasRecientes>().registrar(resultado.clima);
+
+      if (!mounted) {
+        return;
+      }
+
       setState(() {
         _resultado = resultado.clima;
-        _precisionUbicacionMetros =
-            resultado.ubicacion.precisionMetros;
+        _precisionUbicacionMetros = resultado.ubicacion.precisionMetros;
       });
     } on ExcepcionUbicacion catch (error) {
-      _mostrarError(
-        error.mensaje,
-        tipoUbicacion: error.tipo,
-      );
+      _mostrarError(error.mensaje, tipoUbicacion: error.tipo);
     } on ExcepcionClima catch (error) {
       _mostrarError(error.mensaje);
     } catch (_) {
-      _mostrarError(
-        'No fue posible usar tu ubicación en este momento.',
-      );
+      _mostrarError('No fue posible usar tu ubicación en este momento.');
     } finally {
       _finalizarCarga();
     }
@@ -147,10 +206,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
     });
   }
 
-  void _mostrarError(
-    String mensaje, {
-    TipoErrorUbicacion? tipoUbicacion,
-  }) {
+  void _mostrarError(String mensaje, {TipoErrorUbicacion? tipoUbicacion}) {
     if (!mounted) {
       return;
     }
@@ -172,8 +228,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   }
 
   Future<void> _abrirConfiguracionAplicacion() async {
-    final abierto =
-        await _accionesUbicacion.abrirConfiguracionAplicacion();
+    final abierto = await _accionesUbicacion.abrirConfiguracionAplicacion();
 
     if (!abierto && mounted) {
       _mostrarAvisoConfiguracion();
@@ -181,8 +236,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   }
 
   Future<void> _abrirConfiguracionUbicacion() async {
-    final abierto =
-        await _accionesUbicacion.abrirConfiguracionUbicacion();
+    final abierto = await _accionesUbicacion.abrirConfiguracionUbicacion();
 
     if (!abierto && mounted) {
       _mostrarAvisoConfiguracion();
@@ -192,9 +246,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   void _mostrarAvisoConfiguracion() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text(
-          'No fue posible abrir la configuración automáticamente.',
-        ),
+        content: Text('No fue posible abrir la configuración automáticamente.'),
       ),
     );
   }
@@ -202,41 +254,38 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
   Widget _accionParaError() {
     return switch (_tipoErrorUbicacion) {
       TipoErrorUbicacion.servicioDeshabilitado => BotonAccion(
-          texto: 'Abrir configuración de ubicación',
-          icono: Icons.location_off_outlined,
-          onPressed: _abrirConfiguracionUbicacion,
-        ),
+        texto: 'Abrir configuración de ubicación',
+        icono: Icons.location_off_outlined,
+        onPressed: _abrirConfiguracionUbicacion,
+      ),
       TipoErrorUbicacion.permisoDenegadoPermanentemente => BotonAccion(
-          texto: 'Abrir configuración de la app',
-          icono: Icons.settings_outlined,
-          onPressed: _abrirConfiguracionAplicacion,
-        ),
+        texto: 'Abrir configuración de la app',
+        icono: Icons.settings_outlined,
+        onPressed: _abrirConfiguracionAplicacion,
+      ),
       TipoErrorUbicacion.permisoDenegado => BotonAccion(
-          texto: 'Reintentar permiso',
-          icono: Icons.my_location_rounded,
-          onPressed: _usarMiUbicacion,
-        ),
+        texto: 'Reintentar permiso',
+        icono: Icons.my_location_rounded,
+        onPressed: _usarMiUbicacion,
+      ),
       TipoErrorUbicacion.tiempoAgotado ||
-      TipoErrorUbicacion.noDisponible =>
-        BotonAccion(
-          texto: 'Reintentar ubicación',
-          icono: Icons.refresh_rounded,
-          onPressed: _usarMiUbicacion,
-        ),
+      TipoErrorUbicacion.noDisponible => BotonAccion(
+        texto: 'Reintentar ubicación',
+        icono: Icons.refresh_rounded,
+        onPressed: _usarMiUbicacion,
+      ),
       null => BotonAccion(
-          texto: 'Reintentar búsqueda',
-          icono: Icons.refresh_rounded,
-          onPressed: _consultar,
-        ),
+        texto: 'Reintentar búsqueda',
+        icono: Icons.refresh_rounded,
+        onPressed: _consultar,
+      ),
     };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Explorar'),
-      ),
+      appBar: AppBar(title: const Text('Explorar')),
       body: SingleChildScrollView(
         child: ContenidoAdaptable(
           child: Column(
@@ -253,23 +302,20 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: DimensionesApp.espacio24),
-              TextField(
+              SelectorDestino(
                 controller: _destinoController,
                 enabled: !_cargando,
+                fuente: widget.fuenteUbicaciones,
+                habilitarAutocompletado: _habilitarAutocompletado,
                 textInputAction: TextInputAction.search,
-                textCapitalization: TextCapitalization.words,
+                prefixIcon: Icons.travel_explore_outlined,
+                onChanged: _destinoCambio,
+                onSeleccionado: _seleccionarDestino,
                 onSubmitted: (_) => _consultar(),
-                decoration: const InputDecoration(
-                  labelText: 'Destino',
-                  hintText: 'Ej. Tarija, Bolivia',
-                  prefixIcon: Icon(Icons.travel_explore_outlined),
-                ),
               ),
               const SizedBox(height: DimensionesApp.espacio12),
               BotonAccion(
-                texto: _cargando
-                    ? 'Consultando clima...'
-                    : 'Consultar clima',
+                texto: _cargando ? 'Consultando clima...' : 'Consultar clima',
                 icono: _cargando ? null : Icons.cloud_outlined,
                 onPressed: _cargando ? null : _consultar,
               ),
@@ -296,8 +342,7 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
               else if (_resultado != null)
                 _ResultadoClima(
                   resultado: _resultado!,
-                  precisionUbicacionMetros:
-                      _precisionUbicacionMetros,
+                  precisionUbicacionMetros: _precisionUbicacionMetros,
                 )
               else if (!_consultaRealizada)
                 const EstadoVacio(
@@ -316,26 +361,19 @@ class _PantallaExplorarState extends State<PantallaExplorar> {
 }
 
 class _EstadoCargando extends StatelessWidget {
-  const _EstadoCargando({
-    required this.mensaje,
-  });
+  const _EstadoCargando({required this.mensaje});
 
   final String mensaje;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: DimensionesApp.espacio32,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: DimensionesApp.espacio32),
       child: Column(
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: DimensionesApp.espacio16),
-          Text(
-            mensaje,
-            textAlign: TextAlign.center,
-          ),
+          Text(mensaje, textAlign: TextAlign.center),
         ],
       ),
     );
@@ -360,10 +398,7 @@ class _ResultadoClima extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TarjetaInformativa(
-          icono: ClimaVisual.icono(
-            actual.codigoClima,
-            esDeDia: actual.esDeDia,
-          ),
+          icono: ClimaVisual.icono(actual.codigoClima, esDeDia: actual.esDeDia),
           titulo: resultado.ubicacion.nombreCompleto,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,10 +424,7 @@ class _ResultadoClima extends StatelessWidget {
               _DatoClima(
                 icono: Icons.thermostat_outlined,
                 etiqueta: 'Sensación',
-                valor: _temperatura(
-                  actual.temperaturaAparente,
-                  unidad,
-                ),
+                valor: _temperatura(actual.temperaturaAparente, unidad),
               ),
               const SizedBox(height: DimensionesApp.espacio8),
               _DatoClima(
@@ -404,8 +436,7 @@ class _ResultadoClima extends StatelessWidget {
               _DatoClima(
                 icono: Icons.air_rounded,
                 etiqueta: 'Viento',
-                valor:
-                    '${_numero(actual.velocidadViento)} km/h',
+                valor: '${_numero(actual.velocidadViento)} km/h',
               ),
             ],
           ),
@@ -426,13 +457,8 @@ class _ResultadoClima extends StatelessWidget {
         else
           ...resultado.pronostico.dias.map(
             (dia) => Padding(
-              padding: const EdgeInsets.only(
-                bottom: DimensionesApp.espacio12,
-              ),
-              child: _TarjetaPronosticoDia(
-                dia: dia,
-                unidad: unidad,
-              ),
+              padding: const EdgeInsets.only(bottom: DimensionesApp.espacio12),
+              child: _TarjetaPronosticoDia(dia: dia, unidad: unidad),
             ),
           ),
         const SizedBox(height: DimensionesApp.espacio8),
@@ -446,10 +472,7 @@ class _ResultadoClima extends StatelessWidget {
     );
   }
 
-  static String _temperatura(
-    double valorCelsius,
-    UnidadTemperatura unidad,
-  ) {
+  static String _temperatura(double valorCelsius, UnidadTemperatura unidad) {
     final convertido = unidad.convertirDesdeCelsius(valorCelsius);
     return '${convertido.round()} ${unidad.simbolo}';
   }
@@ -464,30 +487,22 @@ class _ResultadoClima extends StatelessWidget {
 }
 
 class _TarjetaPronosticoDia extends StatelessWidget {
-  const _TarjetaPronosticoDia({
-    required this.dia,
-    required this.unidad,
-  });
+  const _TarjetaPronosticoDia({required this.dia, required this.unidad});
 
   final PronosticoDiario dia;
   final UnidadTemperatura unidad;
 
   @override
   Widget build(BuildContext context) {
-    final maxima =
-        unidad.convertirDesdeCelsius(dia.temperaturaMaxima).round();
-    final minima =
-        unidad.convertirDesdeCelsius(dia.temperaturaMinima).round();
+    final maxima = unidad.convertirDesdeCelsius(dia.temperaturaMaxima).round();
+    final minima = unidad.convertirDesdeCelsius(dia.temperaturaMinima).round();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(DimensionesApp.espacio16),
         child: Row(
           children: [
-            Icon(
-              ClimaVisual.icono(dia.codigoClima),
-              size: 30,
-            ),
+            Icon(ClimaVisual.icono(dia.codigoClima), size: 30),
             const SizedBox(width: DimensionesApp.espacio12),
             Expanded(
               child: Column(
@@ -517,10 +532,7 @@ class _TarjetaPronosticoDia extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.water_drop_outlined,
-                      size: 16,
-                    ),
+                    const Icon(Icons.water_drop_outlined, size: 16),
                     const SizedBox(width: 4),
                     Text('${dia.probabilidadPrecipitacion}%'),
                   ],
@@ -582,10 +594,7 @@ class _DatoClima extends StatelessWidget {
         Icon(icono, size: 18),
         const SizedBox(width: DimensionesApp.espacio8),
         Expanded(child: Text(etiqueta)),
-        Text(
-          valor,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text(valor, style: Theme.of(context).textTheme.titleSmall),
       ],
     );
   }

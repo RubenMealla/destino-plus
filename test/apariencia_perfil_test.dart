@@ -50,21 +50,12 @@ class _AlmacenPreferenciasFalso implements AlmacenPreferencias {
   }
 }
 
-Widget _appDePrueba(
-  EstadoApariencia apariencia,
-  EstadoUnidades unidades,
-) {
+Widget _appDePrueba(EstadoApariencia apariencia, EstadoUnidades unidades) {
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<EstadoSesion>.value(
-        value: EstadoSesion.instancia,
-      ),
-      ChangeNotifierProvider<EstadoApariencia>.value(
-        value: apariencia,
-      ),
-      ChangeNotifierProvider<EstadoUnidades>.value(
-        value: unidades,
-      ),
+      ChangeNotifierProvider<EstadoSesion>.value(value: EstadoSesion.instancia),
+      ChangeNotifierProvider<EstadoApariencia>.value(value: apariencia),
+      ChangeNotifierProvider<EstadoUnidades>.value(value: unidades),
     ],
     child: Consumer<EstadoApariencia>(
       builder: (context, estado, child) {
@@ -90,14 +81,13 @@ void main() {
     await apariencia.cargar();
     await unidades.cargar();
 
-    await tester.pumpWidget(
-      _appDePrueba(apariencia, unidades),
-    );
+    await tester.pumpWidget(_appDePrueba(apariencia, unidades));
     await tester.pumpAndSettle();
 
     expect(find.text('Sistema'), findsWidgets);
     expect(apariencia.themeMode, ThemeMode.system);
 
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Oscuro'));
     await tester.tap(find.widgetWithText(ChoiceChip, 'Oscuro'));
     await tester.pumpAndSettle();
 
@@ -119,11 +109,10 @@ void main() {
     await unidades.cargar();
     await apariencia.cambiarModo(ModoApariencia.oscuro);
 
-    await tester.pumpWidget(
-      _appDePrueba(apariencia, unidades),
-    );
+    await tester.pumpWidget(_appDePrueba(apariencia, unidades));
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Sistema'));
     await tester.tap(find.widgetWithText(ChoiceChip, 'Sistema'));
     await tester.pumpAndSettle();
 
@@ -143,26 +132,19 @@ void main() {
     await apariencia.cargar();
     await unidades.cargar();
 
-    await tester.pumpWidget(
-      _appDePrueba(apariencia, unidades),
-    );
+    await tester.pumpWidget(_appDePrueba(apariencia, unidades));
     await tester.pumpAndSettle();
 
     expect(find.text('Celsius (°C)'), findsOneWidget);
     expect(find.text('Fahrenheit (°F)'), findsOneWidget);
 
-    await tester.tap(
+    await tester.ensureVisible(
       find.widgetWithText(ChoiceChip, 'Fahrenheit (°F)'),
     );
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Fahrenheit (°F)'));
     await tester.pumpAndSettle();
 
-    expect(
-      unidades.temperatura,
-      UnidadTemperatura.fahrenheit,
-    );
-    expect(
-      await servicio.leerUnidadTemperatura(),
-      'fahrenheit',
-    );
+    expect(unidades.temperatura, UnidadTemperatura.fahrenheit);
+    expect(await servicio.leerUnidadTemperatura(), 'fahrenheit');
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../features/auth/estado/estado_sesion.dart';
+import '../features/clima/estado/estado_climas_recientes.dart';
 import 'preferencias/estado_apariencia.dart';
 import 'preferencias/estado_unidades.dart';
 import 'router/router_app.dart';
@@ -22,6 +23,9 @@ class DestinoPlusApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<EstadoUnidades>.value(
           value: EstadoUnidades.instancia,
+        ),
+        ChangeNotifierProvider<EstadoClimasRecientes>.value(
+          value: EstadoClimasRecientes.instancia,
         ),
       ],
       child: Consumer<EstadoApariencia>(

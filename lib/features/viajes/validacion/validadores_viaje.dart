@@ -52,9 +52,41 @@ abstract final class ValidadoresViaje {
     return null;
   }
 
+  /// Impide crear viajes en el pasado.
+  ///
+  /// En edición se puede conservar la fecha histórica original. Si el viaje
+  /// ya había comenzado, esa fecha pasa a ser el límite mínimo para no
+  /// invalidar un registro existente.
+  static String? fechaInicioPermitida(
+    DateTime inicio, {
+    required DateTime hoy,
+    DateTime? inicioOriginal,
+  }) {
+    final fechaInicio = soloFecha(inicio);
+    final fechaHoy = soloFecha(hoy);
+    final original = inicioOriginal == null ? null : soloFecha(inicioOriginal);
+
+    var minima = fechaHoy;
+
+    if (original != null && original.isBefore(fechaHoy)) {
+      minima = original;
+    }
+
+    if (fechaInicio.isBefore(minima)) {
+      if (original != null && original.isBefore(fechaHoy)) {
+        return 'La fecha de inicio no puede ser anterior a '
+            '${formatearFecha(minima)}.';
+      }
+
+      return 'La fecha de inicio no puede ser anterior a hoy.';
+    }
+
+    return null;
+  }
+
   static String? rangoFechas(DateTime inicio, DateTime fin) {
-    final fechaInicio = DateTime(inicio.year, inicio.month, inicio.day);
-    final fechaFin = DateTime(fin.year, fin.month, fin.day);
+    final fechaInicio = soloFecha(inicio);
+    final fechaFin = soloFecha(fin);
 
     if (fechaFin.isBefore(fechaInicio)) {
       return 'La fecha de fin no puede ser anterior a la fecha de inicio.';
@@ -89,5 +121,16 @@ abstract final class ValidadoresViaje {
     }
 
     return fecha;
+  }
+
+  static DateTime soloFecha(DateTime fecha) {
+    return DateTime(fecha.year, fecha.month, fecha.day);
+  }
+
+  static String formatearFecha(DateTime fecha) {
+    final dia = fecha.day.toString().padLeft(2, '0');
+    final mes = fecha.month.toString().padLeft(2, '0');
+
+    return '$dia/$mes/${fecha.year}';
   }
 }

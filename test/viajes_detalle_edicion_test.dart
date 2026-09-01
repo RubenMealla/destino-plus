@@ -5,6 +5,7 @@ import 'package:destino_plus/features/viajes/pantalla_formulario_viaje.dart';
 import 'package:destino_plus/features/viajes/servicios/repositorio_viajes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'soporte/fuente_actividades_vacia_prueba.dart';
 
 class _FuenteViajesFalsa implements FuenteViajes {
@@ -65,8 +66,7 @@ void main() {
         home: PantallaDetalleViaje(
           viajeId: 'viaje-1',
           repositorio: fuente,
-          repositorioActividades:
-              const FuenteActividadesVaciaPrueba(),
+          repositorioActividades: const FuenteActividadesVaciaPrueba(),
         ),
       ),
     );
@@ -88,10 +88,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: TemaApp.claro,
-        home: PantallaFormularioViaje(
-          viajeId: 'viaje-1',
-          repositorio: fuente,
-        ),
+        home: PantallaFormularioViaje(viajeId: 'viaje-1', repositorio: fuente),
       ),
     );
     await tester.pumpAndSettle();
@@ -112,10 +109,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: TemaApp.claro,
-        home: PantallaFormularioViaje(
-          viajeId: 'otro-id',
-          repositorio: fuente,
-        ),
+        home: PantallaFormularioViaje(viajeId: 'otro-id', repositorio: fuente),
       ),
     );
     await tester.pumpAndSettle();

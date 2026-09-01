@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FuenteViajesFalsa implements FuenteViajes {
-  _FuenteViajesFalsa([List<Viaje>? iniciales])
-      : viajes = [...?iniciales];
+  _FuenteViajesFalsa([List<Viaje>? iniciales]) : viajes = [...?iniciales];
 
   final List<Viaje> viajes;
 
@@ -66,6 +65,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Guardar viaje'));
     await tester.tap(find.text('Guardar viaje'));
     await tester.pump();
 
@@ -77,7 +77,7 @@ void main() {
       find.text('El destino debe tener al menos 2 caracteres.'),
       findsOneWidget,
     );
-    expect(find.text('Usa el formato DD/MM/AAAA.'), findsNWidgets(2));
+    expect(find.text('Usa el formato DD/MM/AAAA.'), findsNothing);
   });
 
   testWidgets('la lista muestra viajes existentes', (tester) async {

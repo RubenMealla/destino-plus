@@ -17,12 +17,15 @@ class ExcepcionClima implements Exception {
 /// Contrato remoto utilizado por la lógica de clima.
 ///
 /// Permite probar la consulta por destino sin realizar peticiones reales.
-abstract interface class FuenteClimaRemota {
+abstract interface class FuenteBusquedaUbicaciones {
   Future<List<UbicacionClima>> buscarUbicaciones(
     String consulta, {
     int limite = 5,
   });
+}
 
+abstract interface class FuenteClimaRemota
+    implements FuenteBusquedaUbicaciones {
   Future<PronosticoClima> obtenerPronostico({
     required double latitud,
     required double longitud,
@@ -31,12 +34,10 @@ abstract interface class FuenteClimaRemota {
 
 /// Cliente HTTP mínimo para los servicios públicos de Open-Meteo.
 class ClienteOpenMeteo implements FuenteClimaRemota {
-  ClienteOpenMeteo({
-    http.Client? clienteHttp,
-  }) : _clienteHttp = clienteHttp ?? http.Client();
+  ClienteOpenMeteo({http.Client? clienteHttp})
+    : _clienteHttp = clienteHttp ?? http.Client();
 
-  static const String _hostGeocodificacion =
-      'geocoding-api.open-meteo.com';
+  static const String _hostGeocodificacion = 'geocoding-api.open-meteo.com';
   static const String _hostPronostico = 'api.open-meteo.com';
 
   final http.Client _clienteHttp;
@@ -58,16 +59,12 @@ class ClienteOpenMeteo implements FuenteClimaRemota {
 
     final limiteSeguro = limite.clamp(1, 10);
 
-    final uri = Uri.https(
-      _hostGeocodificacion,
-      '/v1/search',
-      {
-        'name': termino,
-        'count': '$limiteSeguro',
-        'language': 'es',
-        'format': 'json',
-      },
-    );
+    final uri = Uri.https(_hostGeocodificacion, '/v1/search', {
+      'name': termino,
+      'count': '$limiteSeguro',
+      'language': 'es',
+      'format': 'json',
+    });
 
     final respuesta = await _obtener(uri);
 
@@ -103,30 +100,26 @@ class ClienteOpenMeteo implements FuenteClimaRemota {
       throw const ExcepcionClima('La longitud no es válida.');
     }
 
-    final uri = Uri.https(
-      _hostPronostico,
-      '/v1/forecast',
-      {
-        'latitude': '$latitud',
-        'longitude': '$longitud',
-        'current': [
-          'temperature_2m',
-          'relative_humidity_2m',
-          'apparent_temperature',
-          'is_day',
-          'weather_code',
-          'wind_speed_10m',
-        ].join(','),
-        'daily': [
-          'weather_code',
-          'temperature_2m_max',
-          'temperature_2m_min',
-          'precipitation_probability_max',
-        ].join(','),
-        'timezone': 'auto',
-        'forecast_days': '7',
-      },
-    );
+    final uri = Uri.https(_hostPronostico, '/v1/forecast', {
+      'latitude': '$latitud',
+      'longitude': '$longitud',
+      'current': [
+        'temperature_2m',
+        'relative_humidity_2m',
+        'apparent_temperature',
+        'is_day',
+        'weather_code',
+        'wind_speed_10m',
+      ].join(','),
+      'daily': [
+        'weather_code',
+        'temperature_2m_max',
+        'temperature_2m_min',
+        'precipitation_probability_max',
+      ].join(','),
+      'timezone': 'auto',
+      'forecast_days': '7',
+    });
 
     final respuesta = await _obtener(uri);
 
@@ -144,12 +137,7 @@ class ClienteOpenMeteo implements FuenteClimaRemota {
 
     try {
       respuesta = await _clienteHttp
-          .get(
-            uri,
-            headers: const {
-              'Accept': 'application/json',
-            },
-          )
+          .get(uri, headers: const {'Accept': 'application/json'})
           .timeout(const Duration(seconds: 15));
     } catch (_) {
       throw const ExcepcionClima(
